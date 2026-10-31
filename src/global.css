@@ -1,0 +1,321 @@
+/*
+ * Design tokens mirror OpenBot (openbot.run): Inter, near-black neutral
+ * surfaces, hairline white-alpha borders, light "paper" primary action,
+ * #007cf7 accent, pill buttons and 8px controls. Dark is the primary theme.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,100..900&display=swap');
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Light — OpenBot `:root[data-openbot-color-scheme="light"]` */
+  --background: #f5f5f6;
+  --foreground: #141414;
+  --card: #ffffff;
+  --card-foreground: #141414;
+  --popover: #ffffff;
+  --popover-foreground: #141414;
+  --primary: #141414;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f0f2;
+  --secondary-foreground: #141414;
+  --muted: #f0f0f2;
+  --muted-foreground: #6b6b70;
+  --accent: #1414140d;
+  --accent-foreground: #141414;
+  --destructive: #e8222d;
+  --destructive-foreground: #c0141d;
+  --border: #1414141a;
+  --input: #1414141f;
+  --ring: #6b6b70;
+
+  /* OpenBot extras */
+  --surface-raised: #fcfcfc;
+  --control: #ffffff;
+  --control-hover: #f0f0f2;
+  --control-active: #e8e8eb;
+  --text-secondary: #3a3a3c;
+  --text-dim: #8e8e93;
+  --brand: #007cf7;
+  --brand-hover: #006ad4;
+  --brand-foreground: #ffffff;
+  --brand-text: #0064c8;
+  --brand-soft: #007cf71f;
+  --success: #1fa85a;
+  --success-soft: #1fa85a1f;
+  --warning: #f08a00;
+  --warning-soft: #f08a001f;
+  --destructive-soft: #e8222d1f;
+  --glass: #1414140a;
+  --glass-hover: #14141414;
+  --glass-border: #1414141f;
+  --glass-highlight: #ffffff99;
+  --logo: #d6adf2;
+  --shadow-color: transparent;
+
+  --chart-1: #007cf7;
+  --chart-2: #1fa85a;
+  --chart-3: #f08a00;
+  --chart-4: #b06fd9;
+  --chart-5: #2aa3bb;
+
+  --radius: 0.75rem; /* 12px — OpenBot radius-lg */
+
+  --sidebar: #f5f5f6;
+  --sidebar-foreground: #141414;
+  --sidebar-primary: #007cf7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1414140d;
+  --sidebar-accent-foreground: #141414;
+  --sidebar-border: #1414141a;
+  --sidebar-ring: #6b6b70;
+}
+
+.dark {
+  /* Dark — OpenBot `:root` (default) */
+  --background: #1a1a1a;
+  --foreground: #ffffff;
+  --card: #212121;
+  --card-foreground: #ffffff;
+  --popover: #242424;
+  --popover-foreground: #ffffff;
+  --primary: #f0f0f0;
+  --primary-foreground: #141414;
+  --secondary: #212121;
+  --secondary-foreground: #ffffff;
+  --muted: #212121;
+  --muted-foreground: #979797;
+  --accent: #ffffff0f;
+  --accent-foreground: #ffffff;
+  --destructive: #fd2f3b;
+  --destructive-foreground: #ff6069;
+  --border: #ffffff0b;
+  --input: #ffffff14;
+  --ring: #979797;
+
+  --surface-raised: #242424;
+  --control: #212121;
+  --control-hover: #242424;
+  --control-active: #2a2a2a;
+  --text-secondary: #dcdcdc;
+  --text-dim: #6a6a6a;
+  --brand: #007cf7;
+  --brand-hover: #1f8fff;
+  --brand-foreground: #ffffff;
+  --brand-text: #42a0ff;
+  --brand-soft: #007cf729;
+  --success: #31cf76;
+  --success-soft: #31cf761f;
+  --warning: #ff9412;
+  --warning-soft: #ff94121f;
+  --destructive-soft: #fd2f3b29;
+  --glass: #ffffff12;
+  --glass-hover: #ffffff1c;
+  --glass-border: #ffffff2e;
+  --glass-highlight: #ffffff1f;
+  --logo: #d6adf2;
+  --shadow-color: #00000073;
+
+  --chart-1: #74b9ff;
+  --chart-2: #31cf76;
+  --chart-3: #ff9412;
+  --chart-4: #d6adf2;
+  --chart-5: #6bc7d9;
+
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #007cf7;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffffff0f;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #ffffff0b;
+  --sidebar-ring: #979797;
+}
+
+@theme inline {
+  --font-sans: 'Inter', 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, monospace;
+
+  /* OpenBot type scale: 12 / 13 / 14 / 16 / 18 / 24 */
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 18px;
+  --text-base: 14px;
+  --text-base--line-height: 20px;
+  --text-lg: 16px;
+  --text-lg--line-height: 22px;
+  --text-xl: 18px;
+  --text-xl--line-height: 24px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 30px;
+  --text-3xl: 32px;
+  --text-3xl--line-height: 38px;
+
+  --tracking-tight: -0.1px;
+  --tracking-wide: 0.02em;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-surface-raised: var(--surface-raised);
+  --color-control: var(--control);
+  --color-control-hover: var(--control-hover);
+  --color-control-active: var(--control-active);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-dim: var(--text-dim);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-text: var(--brand-text);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-glass: var(--glass);
+  --color-glass-hover: var(--glass-hover);
+  --color-glass-border: var(--glass-border);
+  --color-glass-highlight: var(--glass-highlight);
+  --color-logo: var(--logo);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* OpenBot radii: 4 / 6 / 8 / 12 / 14 (card) / 20 / 22 (bubble) / 30 (modal) */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: var(--radius);
+  --radius-card: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 30px;
+
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: 0 12px 32px var(--shadow-color);
+  --shadow-lg: 0 12px 32px var(--shadow-color);
+  --shadow-glass: 0 1px 0 0 var(--glass-highlight) inset, 0 10px 30px -18px #00000047;
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 20px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--brand-soft);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  a {
+    color: var(--brand-text);
+    text-underline-offset: 2px;
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    border-radius: var(--radius-xs);
+    background: var(--glass);
+    padding: 1px 5px;
+  }
+
+  pre code {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* Uppercase section label — OpenBot `site-sheet-heading` */
+@utility kicker {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Glass surface used by OpenBot's secondary buttons and chrome */
+@utility glass {
+  background-color: var(--glass);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 1px 0 0 var(--glass-highlight) inset, 0 10px 30px -18px #00000047;
+  backdrop-filter: blur(12px);
+}
