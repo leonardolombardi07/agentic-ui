@@ -5,6 +5,8 @@ import {
 	HeadContent,
 	Scripts,
 } from "@tanstack/react-router";
+import { APP_DESCRIPTION, APP_NAME, seo } from "@/lib/seo";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import globalCss from "../global.css?url";
 import { tanstackQueryPlugin } from "./-root/tanstack-query";
 import { tanstackRouterPLugin } from "./-root/tanstack-router";
@@ -13,7 +15,6 @@ interface MyRouterContext {
 	queryClient: QueryClient;
 }
 
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'dark';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`;
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
 	head: () => ({
@@ -25,9 +26,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				name: "viewport",
 				content: "width=device-width, initial-scale=1",
 			},
-			{
-				title: "TanStack Start Starter",
-			},
+			...seo({ description: APP_DESCRIPTION }),
+			{ name: "application-name", content: APP_NAME },
+			{ property: "og:site_name", content: APP_NAME },
+			{ property: "og:type", content: "website" },
+			// Every page is behind auth, so there's nothing for search engines to index.
+			{ name: "robots", content: "noindex, nofollow" },
 		],
 		links: [
 			{

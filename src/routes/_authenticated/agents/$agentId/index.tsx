@@ -1,6 +1,13 @@
-import { createFileRoute, useLocation } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useLocation,
+	useNavigate,
+} from "@tanstack/react-router";
 import { useLayoutEffect } from "react";
 import { agentQueryOptions } from "@/lib/api/agents/queries";
+import { seo } from "@/lib/seo";
+import { warnTabLimit } from "../../-shared/workspace/commands";
+import { isShowing } from "../../-shared/workspace/model";
 import { workspace } from "../../-shared/workspace/store";
 
 /*
@@ -15,6 +22,11 @@ export const Route = createFileRoute("/_authenticated/agents/$agentId/")({
 	// Validates the agent (404 -> notFound(), no tab is created) and warms the cache.
 	loader: ({ context: { queryClient }, params }) =>
 		queryClient.ensureQueryData(agentQueryOptions(params.agentId)),
+	head: ({ loaderData }) => ({
+		meta: loaderData
+			? seo({ title: loaderData.name, description: loaderData.description })
+			: seo({ title: "Agent not found" }),
+	}),
 	component: RevealAgent,
 });
 
@@ -29,6 +41,7 @@ function RevealAgent() {
 		select: (l) => l.state.workspaceTab?.groupId,
 	});
 	const hintTabId = useLocation({ select: (l) => l.state.workspaceTab?.tabId });
+	const navigate = useNavigate();
 
 	useLayoutEffect(() => {
 		if (!isSettled) return;
@@ -36,8 +49,17 @@ function RevealAgent() {
 			hintGroupId && hintTabId
 				? { groupId: hintGroupId, tabId: hintTabId }
 				: undefined;
-		workspace.reveal({ kind: "agent", agentId }, hint); // idempotent: the loop breaker
-	}, [isSettled, agentId, hintGroupId, hintTabId]);
+		const target = { kind: "agent", agentId } as const;
+		workspace.reveal(target, hint); // idempotent: the loop breaker
+		/*
+		 * The active group was full. Catches every way here (links, Back, deep links) in
+		 * one place; `/sessions` sends the URL back to whatever tab is focused.
+		 */
+		if (!isShowing(workspace.getState(), target)) {
+			warnTabLimit();
+			void navigate({ to: "/sessions", replace: true });
+		}
+	}, [isSettled, agentId, hintGroupId, hintTabId, navigate]);
 
 	return null;
 }

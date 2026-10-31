@@ -1,10 +1,18 @@
-import { createFileRoute, useLocation } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useLocation,
+	useNavigate,
+} from "@tanstack/react-router";
 import { useLayoutEffect } from "react";
 import { z } from "zod";
 import { sessionQueryOptions } from "@/lib/api/sessions/queries";
+import { seo } from "@/lib/seo";
+import { warnTabLimit } from "../../-shared/workspace/commands";
+import { isShowing } from "../../-shared/workspace/model";
 import { workspace } from "../../-shared/workspace/store";
 
 export const Route = createFileRoute("/_authenticated/sessions/$sessionId/")({
+	staticData: { main: "workspace" },
 	validateSearch: z.object({
 		/** One-shot deep link to a message (e.g. a pending approval). TODO: scroll to it, then replace it away. */
 		messageId: z.string().optional(),
@@ -12,6 +20,9 @@ export const Route = createFileRoute("/_authenticated/sessions/$sessionId/")({
 	// Validates the session (404 -> notFound(), no tab is created) and warms the cache.
 	loader: ({ context: { queryClient }, params }) =>
 		queryClient.ensureQueryData(sessionQueryOptions(params.sessionId)),
+	head: ({ loaderData }) => ({
+		meta: seo({ title: loaderData ? loaderData.title : "Session not found" }),
+	}),
 	component: RevealSession,
 });
 
@@ -33,6 +44,7 @@ function RevealSession() {
 		select: (l) => l.state.workspaceTab?.groupId,
 	});
 	const hintTabId = useLocation({ select: (l) => l.state.workspaceTab?.tabId });
+	const navigate = useNavigate();
 
 	useLayoutEffect(() => {
 		if (!isSettled) return;
@@ -40,8 +52,17 @@ function RevealSession() {
 			hintGroupId && hintTabId
 				? { groupId: hintGroupId, tabId: hintTabId }
 				: undefined;
-		workspace.reveal({ kind: "session", sessionId }, hint); // idempotent: the loop breaker
-	}, [isSettled, sessionId, hintGroupId, hintTabId]);
+		const target = { kind: "session", sessionId } as const;
+		workspace.reveal(target, hint); // idempotent: the loop breaker
+		/*
+		 * The active group was full. Catches every way here (links, Back, deep links) in
+		 * one place; `/sessions` sends the URL back to whatever tab is focused.
+		 */
+		if (!isShowing(workspace.getState(), target)) {
+			warnTabLimit();
+			void navigate({ to: "/sessions", replace: true });
+		}
+	}, [isSettled, sessionId, hintGroupId, hintTabId, navigate]);
 
 	return null;
 }

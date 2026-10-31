@@ -15,6 +15,7 @@ import { Route as AuthenticatedhomeIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAgentsIndexRouteImport } from './routes/_authenticated/agents/index'
 import { Route as AuthenticatedSessionsIndexRouteImport } from './routes/_authenticated/sessions/index'
+import { Route as AuthenticatedSessionsAllRouteImport } from './routes/_authenticated/sessions/all'
 import { Route as AuthenticatedSessionsNewRouteImport } from './routes/_authenticated/sessions/new'
 import { Route as AuthenticatedAgentsAgentIdIndexRouteImport } from './routes/_authenticated/agents/$agentId/index'
 import { Route as AuthenticatedSessionsSessionIdIndexRouteImport } from './routes/_authenticated/sessions/$sessionId/index'
@@ -51,6 +52,12 @@ const AuthenticatedSessionsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedSessionsRouteRoute,
   } as any)
+const AuthenticatedSessionsAllRoute =
+  AuthenticatedSessionsAllRouteImport.update({
+    id: '/all',
+    path: '/all',
+    getParentRoute: () => AuthenticatedSessionsRouteRoute,
+  } as any)
 const AuthenticatedSessionsNewRoute =
   AuthenticatedSessionsNewRouteImport.update({
     id: '/new',
@@ -73,6 +80,7 @@ const AuthenticatedSessionsSessionIdIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedhomeIndexRoute
   '/sessions': typeof AuthenticatedSessionsRouteRouteWithChildren
+  '/sessions/all': typeof AuthenticatedSessionsAllRoute
   '/sessions/new': typeof AuthenticatedSessionsNewRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/agents/': typeof AuthenticatedAgentsIndexRoute
@@ -81,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/sessions/$sessionId/': typeof AuthenticatedSessionsSessionIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/sessions/all': typeof AuthenticatedSessionsAllRoute
   '/sessions/new': typeof AuthenticatedSessionsNewRoute
   '/': typeof AuthenticatedhomeIndexRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -93,6 +102,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/sessions': typeof AuthenticatedSessionsRouteRouteWithChildren
+  '/_authenticated/sessions/all': typeof AuthenticatedSessionsAllRoute
   '/_authenticated/sessions/new': typeof AuthenticatedSessionsNewRoute
   '/_authenticated/(home)/': typeof AuthenticatedhomeIndexRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/sessions'
+    | '/sessions/all'
     | '/sessions/new'
     | '/admin/'
     | '/agents/'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/sessions/$sessionId/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/sessions/all'
     | '/sessions/new'
     | '/'
     | '/admin'
@@ -125,6 +137,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/_authenticated/sessions'
+    | '/_authenticated/sessions/all'
     | '/_authenticated/sessions/new'
     | '/_authenticated/(home)/'
     | '/_authenticated/admin/'
@@ -182,6 +195,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSessionsIndexRouteImport
       parentRoute: typeof AuthenticatedSessionsRouteRoute
     }
+    '/_authenticated/sessions/all': {
+      id: '/_authenticated/sessions/all'
+      path: '/all'
+      fullPath: '/sessions/all'
+      preLoaderRoute: typeof AuthenticatedSessionsAllRouteImport
+      parentRoute: typeof AuthenticatedSessionsRouteRoute
+    }
     '/_authenticated/sessions/new': {
       id: '/_authenticated/sessions/new'
       path: '/new'
@@ -207,6 +227,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedSessionsRouteRouteChildren {
+  AuthenticatedSessionsAllRoute: typeof AuthenticatedSessionsAllRoute
   AuthenticatedSessionsNewRoute: typeof AuthenticatedSessionsNewRoute
   AuthenticatedSessionsIndexRoute: typeof AuthenticatedSessionsIndexRoute
   AuthenticatedSessionsSessionIdIndexRoute: typeof AuthenticatedSessionsSessionIdIndexRoute
@@ -214,6 +235,7 @@ interface AuthenticatedSessionsRouteRouteChildren {
 
 const AuthenticatedSessionsRouteRouteChildren: AuthenticatedSessionsRouteRouteChildren =
   {
+    AuthenticatedSessionsAllRoute: AuthenticatedSessionsAllRoute,
     AuthenticatedSessionsNewRoute: AuthenticatedSessionsNewRoute,
     AuthenticatedSessionsIndexRoute: AuthenticatedSessionsIndexRoute,
     AuthenticatedSessionsSessionIdIndexRoute:

@@ -12,15 +12,18 @@ import {
 	type LucideIcon,
 	MessagesSquareIcon,
 	PuzzleIcon,
+	SearchIcon,
 	SettingsIcon,
 	ShieldIcon,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { sessionsListQueryOptions } from "@/lib/api/sessions/queries";
+import { SearchDialog } from "./SearchDialog";
 import { type SidebarView, sidebar, useSidebar } from "./sidebar-store";
 
 const itemClassName =
@@ -62,6 +65,7 @@ export function ActivityBar() {
 				}
 				testId="activity-home"
 			/>
+			<SearchItem />
 			<ViewItem view="sessions" label="Sessions" icon={MessagesSquareIcon} />
 			<ViewItem view="agents" label="Agents" icon={BotIcon} />
 			<ModalItem
@@ -111,6 +115,55 @@ function ViewItem({
 			</TooltipTrigger>
 			<TooltipContent side="right">{label}</TooltipContent>
 		</Tooltip>
+	);
+}
+
+/**
+ * Opens the search dialog. Owns the Ctrl/Cmd+K shortcut too: the bar is always
+ * mounted, so the shortcut works on every authenticated route.
+ */
+function SearchItem() {
+	const [open, setOpen] = useState(false);
+
+	useEffect(() => {
+		function handleKeyDown(event: KeyboardEvent) {
+			if (
+				event.key.toLowerCase() === "k" &&
+				(event.ctrlKey || event.metaKey) &&
+				!event.altKey &&
+				!event.shiftKey
+			) {
+				// Also stops the browser from focusing its own search bar.
+				event.preventDefault();
+				setOpen((wasOpen) => !wasOpen);
+			}
+		}
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, []);
+
+	return (
+		<>
+			<Tooltip>
+				<TooltipTrigger
+					render={
+						<button
+							type="button"
+							aria-label="Search"
+							aria-haspopup="dialog"
+							aria-keyshortcuts="Control+K Meta+K"
+							className={cn(itemClassName, open && activeClassName)}
+							onClick={() => setOpen(true)}
+							data-testid="activity-search"
+						/>
+					}
+				>
+					<SearchIcon />
+				</TooltipTrigger>
+				<TooltipContent side="right">Search (Ctrl+K)</TooltipContent>
+			</Tooltip>
+			<SearchDialog open={open} onOpenChange={setOpen} />
+		</>
 	);
 }
 

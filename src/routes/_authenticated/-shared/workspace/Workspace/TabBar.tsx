@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
-import { Columns2Icon, XIcon } from "lucide-react";
+import { Columns2Icon, PlusIcon, XIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,12 @@ export function TabBar({
 			<div
 				role="tablist"
 				aria-label="Open tabs"
-				className="flex min-w-0 flex-1 overflow-x-auto"
+				/*
+				 * Tabs shrink to fit (there are at most MAX_TABS_PER_GROUP), so this rarely
+				 * overflows. When a narrow split does, it still scrolls by wheel or focus,
+				 * just without a scrollbar eating into the 40px bar.
+				 */
+				className="flex min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
 				// Tab clicks focus the group themselves; don't also trigger the group's handler.
 				onPointerDown={(event) => event.stopPropagation()}
 			>
@@ -49,6 +54,30 @@ export function TabBar({
 						<SessionTabItem key={tab.id} tab={tab} {...props} />
 					);
 				})}
+			</div>
+			{/* Right after the last tab, like a browser: it reads as "one more tab here". */}
+			<div
+				className="flex flex-1 items-center px-1"
+				// newSession focuses the group itself; the group's handler would navigate twice.
+				onPointerDown={(event) => event.stopPropagation()}
+			>
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								variant="ghost"
+								size="icon-sm"
+								aria-label="New session"
+								// Stays enabled when full: clicking explains the limit instead.
+								onClick={() => commands.newSession(group.id)}
+								data-testid="tab-bar-new-session"
+							/>
+						}
+					>
+						<PlusIcon />
+					</TooltipTrigger>
+					<TooltipContent>New session</TooltipContent>
+				</Tooltip>
 			</div>
 			<div className="flex shrink-0 items-center px-1">
 				<Tooltip>
@@ -129,7 +158,7 @@ function TabItem({
 	return (
 		<div
 			className={cn(
-				"group/tab flex max-w-56 shrink-0 items-center gap-1 border-r border-border pr-1 pl-3 text-sm",
+				"group/tab flex max-w-56 min-w-20 items-center gap-1 border-r border-border pr-1 pl-3 text-sm",
 				isActive
 					? "bg-background text-foreground"
 					: "text-muted-foreground hover:bg-accent",

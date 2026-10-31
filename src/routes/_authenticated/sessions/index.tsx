@@ -4,6 +4,7 @@ import { getActiveTab } from "../-shared/workspace/model";
 import { useWorkspace } from "../-shared/workspace/store";
 
 export const Route = createFileRoute("/_authenticated/sessions/")({
+	staticData: { main: "workspace" },
 	component: SessionsIndex,
 });
 

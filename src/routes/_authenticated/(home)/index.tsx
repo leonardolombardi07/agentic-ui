@@ -2,12 +2,19 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { currentUserQueryOptions } from "@/lib/api/users/queries";
+import { seo } from "@/lib/seo";
 import { Composer } from "../-shared/composer";
 import { useStartSession } from "../-shared/use-start-session";
 import { homeDraft } from "./-index/draft";
 import { NeedsAction } from "./-index/needs-action";
 
 export const Route = createFileRoute("/_authenticated/(home)/")({
+	head: () => ({
+		meta: seo({
+			description:
+				"What needs your attention now, and a composer to start a new session.",
+		}),
+	}),
 	// Cached for the whole visit, so this only waits on the first load.
 	loader: ({ context: { queryClient } }) =>
 		queryClient.ensureQueryData(currentUserQueryOptions()),

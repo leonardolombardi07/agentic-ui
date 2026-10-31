@@ -7,6 +7,7 @@ import {
 	agentsListQueryOptions,
 	myAgentsListQueryOptions,
 } from "@/lib/api/agents/queries";
+import { seo } from "@/lib/seo";
 import { AgentCard } from "./-index/agent-card";
 
 const sortOptions = ["recent", "popular", "name"] as const;
@@ -27,6 +28,12 @@ export const Route = createFileRoute("/_authenticated/agents/")({
 			queryClient.ensureQueryData(agentsListQueryOptions()),
 			queryClient.ensureQueryData(myAgentsListQueryOptions()),
 		]),
+	head: () => ({
+		meta: seo({
+			title: "Agents",
+			description: "Browse, search and add agents to your workspace.",
+		}),
+	}),
 	component: AgentsGallery,
 });
 

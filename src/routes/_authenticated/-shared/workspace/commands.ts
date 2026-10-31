@@ -1,6 +1,22 @@
 import { useRouter } from "@tanstack/react-router";
-import { getActiveTabRef, type TabRef, type TabTarget } from "./model";
+import { snackbar } from "@/components/ui/snackbar";
+import {
+	getActiveTabRef,
+	getSideGroup,
+	getTabTarget,
+	hasRoomFor,
+	MAX_TABS_PER_GROUP,
+	type TabRef,
+	type TabTarget,
+} from "./model";
 import { workspace } from "./store";
+
+/** Shown whenever an action would open a tab in a full group. */
+export function warnTabLimit() {
+	snackbar.show(
+		`An editor group can have up to ${MAX_TABS_PER_GROUP} tabs. Close one to open another.`,
+	);
+}
 
 /**
  * The only place user actions change focus: apply the store op, then point the URL at
@@ -44,13 +60,36 @@ export function useWorkspaceCommands() {
 
 	return {
 		openToSide(target: TabTarget) {
+			if (!hasRoomFor(getSideGroup(workspace.getState()), target)) {
+				warnTabLimit();
+				return;
+			}
 			workspace.openToSide(target);
 			void syncUrl({ replace: false });
 		},
 		splitGroup(groupId: string) {
+			const ws = workspace.getState();
+			const group = ws.groups.find((g) => g.id === groupId);
+			const tab = group?.tabs.find((t) => t.id === group.activeTabId);
+			const side = ws.groups.find((g) => g.id !== groupId);
+			if (tab && !hasRoomFor(side, getTabTarget(tab))) {
+				warnTabLimit();
+				return;
+			}
 			workspace.focusGroup(groupId);
 			workspace.splitActiveTab();
 			void syncUrl({ replace: false });
+		},
+		/** A new session in `groupId`, from its tab bar. */
+		newSession(groupId: string) {
+			const group = workspace.getState().groups.find((g) => g.id === groupId);
+			if (!hasRoomFor(group)) {
+				warnTabLimit();
+				return;
+			}
+			// `/sessions/new` opens the draft in the active group, so make it this one.
+			workspace.focusGroup(groupId);
+			void router.navigate({ to: "/sessions/new" });
 		},
 		focusTab(ref: TabRef) {
 			const before = getActiveTabRef(workspace.getState());

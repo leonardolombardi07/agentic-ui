@@ -8,18 +8,21 @@ type Section<T extends string> = { id: T; label: string };
 
 /**
  * Modal with a category nav (left) and the section content (right). Shared by
- * Settings and Customizations. Placeholder content for now.
+ * Settings and Customizations. Sections without content yet show just their title.
  */
 export function SectionsModal<T extends string>({
 	name,
 	title,
 	sections,
 	current,
+	children,
 }: {
 	name: ModalName;
 	title: string;
 	sections: Section<T>[];
 	current: T;
+	/** Content of the current section. */
+	children?: React.ReactNode;
 }) {
 	const close = useCloseModal();
 	const currentLabel = sections.find((s) => s.id === current)?.label ?? current;
@@ -69,6 +72,7 @@ export function SectionsModal<T extends string>({
 					</nav>
 					<div className="min-w-0 flex-1 overflow-y-auto p-6 pr-14">
 						<h2 className="text-2xl font-medium">{currentLabel}</h2>
+						{children}
 					</div>
 				</div>
 			</DialogContent>

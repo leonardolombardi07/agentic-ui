@@ -37,6 +37,9 @@ export const EditorGroupSchema = z.object({
 	activeTabId: z.string().nullable(),
 });
 
+/** Keeps groups focused, and lets the tab bar fit its tabs without scrolling. */
+export const MAX_TABS_PER_GROUP = 5;
+
 export const SPLIT_RATIO = { min: 0.2, max: 0.8, default: 0.5 } as const;
 
 export const WorkspaceSchema = z.object({
@@ -112,9 +115,34 @@ export function getActiveGroup(ws: Workspace): EditorGroup {
 	return ws.groups.find((g) => g.id === ws.activeGroupId) ?? ws.groups[0];
 }
 
+/** The group that isn't active, if the workspace is split. */
+export function getSideGroup(ws: Workspace): EditorGroup | undefined {
+	return ws.groups.find((g) => g.id !== ws.activeGroupId);
+}
+
+/**
+ * Whether `group` can show `target` without going over MAX_TABS_PER_GROUP: it already
+ * has a tab for it, or has room for one more. No `target` = a brand-new tab (a new
+ * session). No `group` = a side group that doesn't exist yet, so it will start empty.
+ */
+export function hasRoomFor(
+	group: EditorGroup | undefined,
+	target?: TabTarget,
+): boolean {
+	if (!group) return true;
+	if (target && group.tabs.some((t) => isTabFor(t, target))) return true;
+	return group.tabs.length < MAX_TABS_PER_GROUP;
+}
+
 export function getActiveTab(ws: Workspace): Tab | null {
 	const group = getActiveGroup(ws);
 	return group.tabs.find((t) => t.id === group.activeTabId) ?? null;
+}
+
+/** Whether the focused tab shows `target`, i.e. a `reveal` of it went through. */
+export function isShowing(ws: Workspace, target: TabTarget): boolean {
+	const tab = getActiveTab(ws);
+	return tab !== null && isTabFor(tab, target);
 }
 
 export function getActiveTabRef(ws: Workspace): TabRef | null {
@@ -157,6 +185,7 @@ export function focusTab(ws: Workspace, { groupId, tabId }: TabRef): Workspace {
  * 2. The active tab already shows it -> no-op.
  * 3. The active group has a tab for it -> focus it.
  * 4. Otherwise open a new tab in the active group, right after the current one.
+ *    If the group is full, nothing changes: callers check `isShowing` and warn the user.
  */
 export function reveal(
 	ws: Workspace,
@@ -175,18 +204,20 @@ export function reveal(
 	const group = getActiveGroup(ws);
 	const existing = group.tabs.find((t) => isTabFor(t, target));
 	if (existing) return focusTab(ws, { groupId: group.id, tabId: existing.id });
+	if (!hasRoomFor(group)) return ws;
 	return mapGroup(ws, group.id, (g) =>
 		insertAfterActive(g, newTab(target, init)),
 	);
 }
 
-/** "Open to the side": target the other group, creating it if needed (max 2). */
+/** "Open to the side": target the other group, creating it if needed (max 2). No-op if it's full. */
 export function openToSide(
 	ws: Workspace,
 	target: TabTarget,
 	init?: TabInit,
 ): Workspace {
-	let side = ws.groups.find((g) => g.id !== ws.activeGroupId);
+	let side = getSideGroup(ws);
+	if (!hasRoomFor(side, target)) return ws;
 	let next = ws;
 	if (!side) {
 		side = { id: uid(), tabs: [], activeTabId: null };
