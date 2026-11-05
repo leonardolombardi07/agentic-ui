@@ -120,7 +120,7 @@ function SessionTabItem({ tab, ...props }: TabItemProps & { tab: SessionTab }) {
 			icon={
 				session ? (
 					<AgentIndicator
-						agentId={session.agentId}
+						agentId={session.leadAgentId}
 						isRunning={session.runStatus === "running"}
 					/>
 				) : null

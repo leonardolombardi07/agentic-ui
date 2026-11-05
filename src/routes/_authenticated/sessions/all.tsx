@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { agentsListQueryOptions } from "@/lib/api/agents/queries";
 import { sessionsListQueryOptions } from "@/lib/api/sessions/queries";
 import type { Agent } from "@/lib/api/types/agent";
-import type { Session } from "@/lib/api/types/session";
+import { getPendingAction, type Session } from "@/lib/api/types/session";
 import { seo } from "@/lib/seo";
 import { AgentIndicator } from "../-shared/agent-indicator";
 import {
@@ -54,7 +54,7 @@ function AllSessions() {
 
 	const terms = (q ?? "").toLowerCase().split(/\s+/).filter(Boolean);
 	const filtered = sessions.filter((session) => {
-		const agentName = getAgentName(session.agentId, agentsById);
+		const agentName = getAgentName(session.leadAgentId, agentsById);
 		const haystack = `${session.title} ${agentName}`.toLowerCase();
 		return terms.every((term) => haystack.includes(term));
 	});
@@ -135,7 +135,7 @@ function AllSessions() {
 							<Row
 								key={session.id}
 								session={session}
-								agentName={getAgentName(session.agentId, agentsById)}
+								agentName={getAgentName(session.leadAgentId, agentsById)}
 							/>
 						))}
 					</ul>
@@ -148,6 +148,8 @@ function AllSessions() {
 function Row({ session, agentName }: { session: Session; agentName: string }) {
 	const commands = useWorkspaceCommands();
 	const rowRef = useRef<HTMLLIElement>(null);
+
+	const pendingAction = getPendingAction(session);
 
 	return (
 		<li ref={rowRef}>
@@ -166,7 +168,7 @@ function Row({ session, agentName }: { session: Session; agentName: string }) {
 				data-session-id={session.id}
 			>
 				<AgentIndicator
-					agentId={session.agentId}
+					agentId={session.leadAgentId}
 					isRunning={session.runStatus === "running"}
 					side="right"
 					anchor={rowRef}
@@ -183,11 +185,11 @@ function Row({ session, agentName }: { session: Session; agentName: string }) {
 						</time>
 					</span>
 				</span>
-				{session.pendingAction ? (
+				{pendingAction ? (
 					<>
-						<PendingActionIcon action={session.pendingAction} />
+						<PendingActionIcon action={pendingAction} />
 						<span className="sr-only">
-							{describePendingAction(session.pendingAction)}
+							{describePendingAction(pendingAction)}
 						</span>
 					</>
 				) : null}

@@ -126,7 +126,7 @@ function AgentSessions({
 }) {
 	const { data: sessions } = useSuspenseQuery(sessionsListQueryOptions());
 	const focusedSessionId = useFocusedSessionId();
-	const own = sessions.filter((s) => s.agentId === agent.id);
+	const own = sessions.filter((s) => s.leadAgentId === agent.id);
 
 	return (
 		<>

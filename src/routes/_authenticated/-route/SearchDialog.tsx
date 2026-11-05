@@ -21,7 +21,7 @@ import {
 } from "@/lib/api/agents/queries";
 import { sessionsListQueryOptions } from "@/lib/api/sessions/queries";
 import type { Agent } from "@/lib/api/types/agent";
-import type { Session } from "@/lib/api/types/session";
+import { getPendingAction, type Session } from "@/lib/api/types/session";
 import { AgentAvatar } from "../-shared/agent-avatar";
 import {
 	describePendingAction,
@@ -317,6 +317,7 @@ function ResultItem({
 
 	if (item.kind === "session") {
 		const { session, agent } = item;
+		const pendingAction = getPendingAction(session);
 		return (
 			<Autocomplete.Item
 				value={item}
@@ -334,12 +335,12 @@ function ResultItem({
 					/>
 				)}
 				<span className="min-w-0 flex-1 truncate">{session.title}</span>
-				{session.pendingAction ? (
+				{pendingAction ? (
 					<>
 						<span className="sr-only">
-							{`, ${describePendingAction(session.pendingAction)}`}
+							{`, ${describePendingAction(pendingAction)}`}
 						</span>
-						<PendingActionIcon action={session.pendingAction} />
+						<PendingActionIcon action={pendingAction} />
 					</>
 				) : null}
 				{agent ? (
@@ -451,7 +452,9 @@ function buildGroups({
 		.map((session) => ({
 			kind: "session" as const,
 			session,
-			agent: session.agentId ? agentsById.get(session.agentId) : undefined,
+			agent: session.leadAgentId
+				? agentsById.get(session.leadAgentId)
+				: undefined,
 		}))
 		// The agent's name matches too, so "slides" finds every Slides session.
 		.filter((item) =>
@@ -482,9 +485,11 @@ function buildGroups({
 
 	// Before typing: what's waiting on the user first, then what they're likely after.
 	const needsAttention = sessionItems.filter(
-		(item) => item.session.pendingAction,
+		(item) => item.session.pendingActions.length > 0,
 	);
-	const rest = sessionItems.filter((item) => !item.session.pendingAction);
+	const rest = sessionItems.filter(
+		(item) => item.session.pendingActions.length === 0,
+	);
 	if (type === "all") {
 		push("Needs attention", needsAttention);
 		push("Recent", rest.slice(0, RECENT_LIMIT));

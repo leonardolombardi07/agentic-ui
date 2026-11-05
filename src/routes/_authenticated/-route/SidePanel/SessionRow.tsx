@@ -8,7 +8,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Session } from "@/lib/api/types/session";
+import { getPendingAction, type Session } from "@/lib/api/types/session";
 import { AgentIndicator } from "../../-shared/agent-indicator";
 import {
 	describePendingAction,
@@ -27,6 +27,8 @@ export function SessionRow({
 	const commands = useWorkspaceCommands();
 	const rowRef = useRef<HTMLLIElement>(null);
 	const target = { kind: "session", sessionId: session.id } as const;
+
+	const pendingAction = getPendingAction(session);
 
 	return (
 		<li ref={rowRef} className="group/item relative">
@@ -47,22 +49,22 @@ export function SessionRow({
 				data-testid="sessions-list-item"
 			>
 				<AgentIndicator
-					agentId={session.agentId}
+					agentId={session.leadAgentId}
 					isRunning={session.runStatus === "running"}
 					side="right"
 					anchor={rowRef}
 				/>
 				<span className="truncate">{session.title}</span>
-				{session.pendingAction ? (
+				{pendingAction ? (
 					<span className="sr-only">
-						{`, ${describePendingAction(session.pendingAction)}`}
+						{`, ${describePendingAction(pendingAction)}`}
 					</span>
 				) : null}
 			</Link>
-			{session.pendingAction ? (
+			{pendingAction ? (
 				/* Sits where "Open to the side" appears, and yields that spot on hover/focus. */
 				<span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 transition-opacity group-focus-within/item:opacity-0 group-hover/item:opacity-0">
-					<PendingActionIcon action={session.pendingAction} />
+					<PendingActionIcon action={pendingAction} />
 				</span>
 			) : null}
 			<Tooltip>

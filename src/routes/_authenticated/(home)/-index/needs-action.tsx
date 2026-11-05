@@ -12,25 +12,30 @@ import {
 	respondToPendingActionMutationOptions,
 	sessionsListQueryOptions,
 } from "@/lib/api/sessions/queries";
-import type {
-	PendingAction,
-	PendingActionResponse,
-	Session,
+import {
+	getPendingAction,
+	type PendingAction,
+	type PendingActionResponse,
+	type Session,
 } from "@/lib/api/types/session";
 import { AgentIndicator } from "../../-shared/agent-indicator";
 import { PendingActionIcon } from "../../-shared/pending-action-icon";
 
-type ActionableSession = Session & { pendingAction: PendingAction };
+/** A session paused on the user, with the action the UI shows first. */
+type Actionable = { session: Session; action: PendingAction };
 
-function isActionable(session: Session): session is ActionableSession {
-	return session.pendingAction !== null;
+function toActionable(sessions: Session[]): Actionable[] {
+	return sessions.flatMap((session) => {
+		const action = getPendingAction(session);
+		return action ? [{ session, action }] : [];
+	});
 }
 
 /** Sessions paused on the user, answerable in place so they don't have to open each one. */
 export function NeedsAction() {
 	const { data: sessions } = useSuspenseQuery({
 		...sessionsListQueryOptions(),
-		select: (all) => all.filter(isActionable),
+		select: toActionable,
 	});
 
 	return (
@@ -58,11 +63,12 @@ export function NeedsAction() {
 				</p>
 			) : (
 				<ul className="flex flex-col gap-2">
-					{sessions.map((session) => (
+					{sessions.map(({ session, action }) => (
 						<Item
 							// Keyed by action too: a new action on the same session starts with a fresh reply.
-							key={`${session.id}:${session.pendingAction.id}`}
+							key={`${session.id}:${action.id}`}
 							session={session}
+							action={action}
 						/>
 					))}
 				</ul>
@@ -71,9 +77,8 @@ export function NeedsAction() {
 	);
 }
 
-function Item({ session }: { session: ActionableSession }) {
+function Item({ session, action }: Actionable) {
 	const respond = useMutation(respondToPendingActionMutationOptions());
-	const action = session.pendingAction;
 
 	function handleRespond(response: PendingActionResponse) {
 		respond.mutate({ sessionId: session.id, actionId: action.id, response });
@@ -86,7 +91,7 @@ function Item({ session }: { session: ActionableSession }) {
 			data-session-id={session.id}
 		>
 			<div className="flex min-w-0 items-center gap-2 text-sm">
-				<AgentIndicator agentId={session.agentId} side="bottom" />
+				<AgentIndicator agentId={session.leadAgentId} side="bottom" />
 				<Link
 					to="/sessions/$sessionId"
 					params={{ sessionId: session.id }}

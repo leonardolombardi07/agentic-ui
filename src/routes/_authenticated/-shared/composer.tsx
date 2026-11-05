@@ -1,5 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpIcon, BrainIcon, CpuIcon, ShieldIcon } from "lucide-react";
+import {
+	ArrowUpIcon,
+	BrainIcon,
+	CpuIcon,
+	ShieldIcon,
+	SquareIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { AgentPicker } from "@/components/chat/agent-picker";
 import {
@@ -21,6 +27,7 @@ import {
 import { modelsListQueryOptions } from "@/lib/api/models/queries";
 import type { EffortLevel, Model } from "@/lib/api/types/model";
 import type { PermissionMode } from "@/lib/api/types/permission-mode";
+import type { SessionSettings } from "@/lib/api/types/session";
 
 const EFFORT_OPTIONS: Record<
 	EffortLevel,
@@ -70,11 +77,12 @@ const PERMISSION_OPTIONS: PromptInputSelectOption<PermissionMode>[] = [
 
 type Attachment = PromptInputAttachment & { file: File };
 
-/** What the user sent. Model, effort and permissions join this once the API takes them. */
+/** What the user sent, with the agent and settings chosen for it. */
 export type ComposerMessage = {
 	text: string;
 	/** `null` is the Default agent. */
 	agentId: string | null;
+	settings: SessionSettings;
 	files: File[];
 };
 
@@ -84,9 +92,18 @@ type ComposerProps = {
 	onDraftChange: (value: string) => void;
 	/** Preselected agent: the session's, or the agent whose page this is. `null` is the Default agent. */
 	defaultAgentId: string | null;
+	/** Preselected model, effort and permissions: the session's. Defaults to the first model. */
+	defaultSettings?: SessionSettings;
+	/** Called when the user picks another agent, e.g. to save it on the session. */
+	onAgentIdChange?: (agentId: string | null) => void;
+	/** Called when the user changes the model, effort or permissions. */
+	onSettingsChange?: (settings: SessionSettings) => void;
 	placeholder?: string;
 	/** Called with the message; the composer clears itself afterwards. */
 	onSend?: (message: ComposerMessage) => void;
+	/** A reply is on its way: Send becomes Stop. */
+	isRunning?: boolean;
+	onStop?: () => void;
 };
 
 /**
@@ -97,18 +114,32 @@ export function Composer({
 	draft,
 	onDraftChange,
 	defaultAgentId,
+	defaultSettings,
+	onAgentIdChange,
+	onSettingsChange,
 	placeholder = "Ask anything...",
 	onSend,
+	isRunning = false,
+	onStop,
 }: ComposerProps) {
 	const { data: yourAgents } = useQuery(myAgentsListQueryOptions());
 	const { data: allAgents } = useQuery(agentsListQueryOptions());
 	const { data: models } = useQuery(modelsListQueryOptions());
 
-	/* Local until the API can store per-session run settings. */
+	/*
+	 * Local, so picking is instant; owners that keep these (a session) listen through
+	 * `onAgentIdChange` / `onSettingsChange` and pass them back as defaults next mount.
+	 */
 	const [agentId, setAgentId] = useState(defaultAgentId);
-	const [modelId, setModelId] = useState<string | null>(null);
-	const [effort, setEffort] = useState<EffortLevel | null>(null);
-	const [permissionMode, setPermissionMode] = useState<PermissionMode>("ask");
+	const [modelId, setModelId] = useState<string | null>(
+		defaultSettings?.modelId ?? null,
+	);
+	const [effort, setEffort] = useState<EffortLevel | null>(
+		defaultSettings?.effort ?? null,
+	);
+	const [permissionMode, setPermissionMode] = useState<PermissionMode>(
+		defaultSettings?.permissionMode ?? "ask",
+	);
 	const [attachments, setAttachments] = useState<Attachment[]>([]);
 
 	const model = models?.find((m) => m.id === modelId) ?? models?.[0];
@@ -116,7 +147,52 @@ export function Composer({
 	// and switching back restores the user's choice.
 	const effectiveEffort = model ? resolveEffort(model, effort) : null;
 
-	const canSend = draft.trim().length > 0 || attachments.length > 0;
+	const canSend =
+		!isRunning && (draft.trim().length > 0 || attachments.length > 0);
+
+	function currentSettings(
+		patch: Partial<{
+			modelId: string;
+			effort: EffortLevel | null;
+			permissionMode: PermissionMode;
+		}> = {},
+	): SessionSettings | null {
+		const nextModel = models?.find(
+			(m) => m.id === (patch.modelId ?? model?.id),
+		);
+		if (!nextModel) return null;
+		return {
+			modelId: nextModel.id,
+			effort: resolveEffort(
+				nextModel,
+				patch.effort === undefined ? effort : patch.effort,
+			),
+			permissionMode: patch.permissionMode ?? permissionMode,
+		};
+	}
+
+	function handleAgentIdChange(value: string | null) {
+		setAgentId(value);
+		onAgentIdChange?.(value);
+	}
+
+	function handleModelChange(value: string) {
+		setModelId(value);
+		const settings = currentSettings({ modelId: value });
+		if (settings) onSettingsChange?.(settings);
+	}
+
+	function handleEffortChange(value: EffortLevel) {
+		setEffort(value);
+		const settings = currentSettings({ effort: value });
+		if (settings) onSettingsChange?.(settings);
+	}
+
+	function handlePermissionModeChange(value: PermissionMode) {
+		setPermissionMode(value);
+		const settings = currentSettings({ permissionMode: value });
+		if (settings) onSettingsChange?.(settings);
+	}
 
 	function addFiles(files: File[]) {
 		setAttachments((current) => [
@@ -135,10 +211,13 @@ export function Composer({
 	}
 
 	function handleSubmit() {
-		if (!canSend) return;
+		const settings = currentSettings();
+		// No settings means the models list hasn't loaded yet.
+		if (!canSend || !settings) return;
 		onSend?.({
 			text: draft.trim(),
 			agentId,
+			settings,
 			files: attachments.map((a) => a.file),
 		});
 		onDraftChange("");
@@ -162,7 +241,7 @@ export function Composer({
 					<PromptInputAddMenu onFilesSelected={addFiles} />
 					<AgentPicker
 						value={agentId}
-						onValueChange={setAgentId}
+						onValueChange={handleAgentIdChange}
 						yourAgents={yourAgents}
 						allAgents={allAgents}
 					/>
@@ -170,7 +249,7 @@ export function Composer({
 						label="Permissions"
 						icon={<ShieldIcon />}
 						value={permissionMode}
-						onValueChange={setPermissionMode}
+						onValueChange={handlePermissionModeChange}
 						options={PERMISSION_OPTIONS}
 						data-testid="composer-permission-mode"
 					/>
@@ -181,7 +260,7 @@ export function Composer({
 							label="Model"
 							icon={<CpuIcon />}
 							value={model.id}
-							onValueChange={setModelId}
+							onValueChange={handleModelChange}
 							options={models.map((m) => ({
 								value: m.id,
 								label: m.name,
@@ -195,22 +274,35 @@ export function Composer({
 							label="Effort"
 							icon={<BrainIcon />}
 							value={effectiveEffort}
-							onValueChange={setEffort}
+							onValueChange={handleEffortChange}
 							options={model.effortLevels.map((level) => EFFORT_OPTIONS[level])}
 							data-testid="composer-effort"
 						/>
 					) : null}
-					<PromptInputAction tooltip="Send (Enter)">
-						<Button
-							size="icon-sm"
-							aria-label="Send"
-							disabled={!canSend}
-							onClick={handleSubmit}
-							data-testid="composer-send"
-						>
-							<ArrowUpIcon />
-						</Button>
-					</PromptInputAction>
+					{isRunning && onStop ? (
+						<PromptInputAction tooltip="Stop the reply">
+							<Button
+								size="icon-sm"
+								aria-label="Stop"
+								onClick={onStop}
+								data-testid="composer-stop"
+							>
+								<SquareIcon className="fill-current" />
+							</Button>
+						</PromptInputAction>
+					) : (
+						<PromptInputAction tooltip="Send (Enter)">
+							<Button
+								size="icon-sm"
+								aria-label="Send"
+								disabled={!canSend}
+								onClick={handleSubmit}
+								data-testid="composer-send"
+							>
+								<ArrowUpIcon />
+							</Button>
+						</PromptInputAction>
+					)}
 				</div>
 			</PromptInputActions>
 		</PromptInput>

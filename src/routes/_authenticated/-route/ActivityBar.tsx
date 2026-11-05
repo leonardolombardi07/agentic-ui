@@ -36,7 +36,7 @@ export function ActivityBar() {
 	const { data: count = 0 } = useQuery({
 		...sessionsListQueryOptions(),
 		select: (sessions) =>
-			sessions.filter((s) => s.pendingAction !== null).length,
+			sessions.filter((s) => s.pendingActions.length > 0).length,
 	});
 	/*
 	 * Client-only: the list includes local drafts and may already be in the cache when

@@ -45,7 +45,7 @@ function NewSession() {
 			void navigate({ to: "/sessions", replace: true });
 			return;
 		}
-		const sessionId = createDraftSession({ agentId: search.agentId });
+		const sessionId = createDraftSession({ leadAgentId: search.agentId });
 		void queryClient.invalidateQueries({
 			queryKey: sessionsListQueryOptions().queryKey,
 			exact: true,

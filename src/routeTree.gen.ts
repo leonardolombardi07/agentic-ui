@@ -17,6 +17,7 @@ import { Route as AuthenticatedAgentsIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSessionsIndexRouteImport } from './routes/_authenticated/sessions/index'
 import { Route as AuthenticatedSessionsAllRouteImport } from './routes/_authenticated/sessions/all'
 import { Route as AuthenticatedSessionsNewRouteImport } from './routes/_authenticated/sessions/new'
+import { Route as ApiChatIndexRouteImport } from './routes/api/chat/index'
 import { Route as AuthenticatedAgentsAgentIdIndexRouteImport } from './routes/_authenticated/agents/$agentId/index'
 import { Route as AuthenticatedSessionsSessionIdIndexRouteImport } from './routes/_authenticated/sessions/$sessionId/index'
 
@@ -64,6 +65,11 @@ const AuthenticatedSessionsNewRoute =
     path: '/new',
     getParentRoute: () => AuthenticatedSessionsRouteRoute,
   } as any)
+const ApiChatIndexRoute = ApiChatIndexRouteImport.update({
+  id: '/api/chat/',
+  path: '/api/chat/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAgentsAgentIdIndexRoute =
   AuthenticatedAgentsAgentIdIndexRouteImport.update({
     id: '/agents/$agentId/',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/agents/': typeof AuthenticatedAgentsIndexRoute
   '/sessions/': typeof AuthenticatedSessionsIndexRoute
+  '/api/chat/': typeof ApiChatIndexRoute
   '/agents/$agentId/': typeof AuthenticatedAgentsAgentIdIndexRoute
   '/sessions/$sessionId/': typeof AuthenticatedSessionsSessionIdIndexRoute
 }
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/agents': typeof AuthenticatedAgentsIndexRoute
   '/sessions': typeof AuthenticatedSessionsIndexRoute
+  '/api/chat': typeof ApiChatIndexRoute
   '/agents/$agentId': typeof AuthenticatedAgentsAgentIdIndexRoute
   '/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdIndexRoute
 }
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/agents/': typeof AuthenticatedAgentsIndexRoute
   '/_authenticated/sessions/': typeof AuthenticatedSessionsIndexRoute
+  '/api/chat/': typeof ApiChatIndexRoute
   '/_authenticated/agents/$agentId/': typeof AuthenticatedAgentsAgentIdIndexRoute
   '/_authenticated/sessions/$sessionId/': typeof AuthenticatedSessionsSessionIdIndexRoute
 }
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/agents/'
     | '/sessions/'
+    | '/api/chat/'
     | '/agents/$agentId/'
     | '/sessions/$sessionId/'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/agents'
     | '/sessions'
+    | '/api/chat'
     | '/agents/$agentId'
     | '/sessions/$sessionId'
   id:
@@ -143,12 +154,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/agents/'
     | '/_authenticated/sessions/'
+    | '/api/chat/'
     | '/_authenticated/agents/$agentId/'
     | '/_authenticated/sessions/$sessionId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ApiChatIndexRoute: typeof ApiChatIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -209,6 +222,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSessionsNewRouteImport
       parentRoute: typeof AuthenticatedSessionsRouteRoute
     }
+    '/api/chat/': {
+      id: '/api/chat/'
+      path: '/api/chat'
+      fullPath: '/api/chat/'
+      preLoaderRoute: typeof ApiChatIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/agents/$agentId/': {
       id: '/_authenticated/agents/$agentId/'
       path: '/agents/$agentId'
@@ -268,6 +288,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ApiChatIndexRoute: ApiChatIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
