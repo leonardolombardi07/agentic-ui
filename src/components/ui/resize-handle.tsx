@@ -10,6 +10,8 @@ type ResizeHandleProps = Omit<ComponentProps<"div">, "onResize"> & {
 	max: number;
 	/** Called once when a drag starts, so the caller can remember the starting size. */
 	onResizeStart?: () => void;
+	/** Called once when a drag ends (pointer released or capture lost). */
+	onResizeEnd?: () => void;
 	/** Total horizontal movement in px since the drag started (not per event: no drift). */
 	onResize: (deltaX: number) => void;
 	/** Arrow keys: a signed step in px (Shift = bigger step). */
@@ -28,6 +30,7 @@ function ResizeHandle({
 	min,
 	max,
 	onResizeStart,
+	onResizeEnd,
 	onResize,
 	onKeyboardResize,
 	onReset,
@@ -40,6 +43,7 @@ function ResizeHandle({
 		startX.current = null;
 		document.documentElement.style.removeProperty("cursor");
 		document.documentElement.style.removeProperty("user-select");
+		onResizeEnd?.();
 	}
 
 	return (

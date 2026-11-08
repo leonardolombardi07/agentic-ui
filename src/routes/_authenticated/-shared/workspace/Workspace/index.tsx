@@ -3,6 +3,7 @@ import { MessageSquarePlusIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { ResizeHandle } from "@/components/ui/resize-handle";
+import { resizeDrag } from "@/lib/resize-drag";
 import { useWorkspaceCommands } from "../commands";
 import { SPLIT_RATIO } from "../model";
 import { useWorkspace, workspace } from "../store";
@@ -63,7 +64,9 @@ export function Workspace() {
 								max={SPLIT_RATIO.max * 100}
 								onResizeStart={() => {
 									ratioAtDragStart.current = workspace.getState().splitRatio;
+									resizeDrag.start();
 								}}
+								onResizeEnd={resizeDrag.end}
 								onResize={(deltaX) =>
 									workspace.setSplitRatio(
 										ratioAtDragStart.current + pxToRatio(deltaX),

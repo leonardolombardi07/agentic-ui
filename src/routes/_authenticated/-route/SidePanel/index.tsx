@@ -1,5 +1,6 @@
 import { Suspense, useRef } from "react";
 import { ResizeHandle } from "@/components/ui/resize-handle";
+import { resizeDrag } from "@/lib/resize-drag";
 import { SIDEBAR_WIDTH, sidebar, useSidebar } from "../sidebar-store";
 import { useIsFocusMode } from "../use-main-mode";
 import { AgentsView } from "./AgentsView";
@@ -38,7 +39,9 @@ export function SidePanel() {
 				max={SIDEBAR_WIDTH.max}
 				onResizeStart={() => {
 					widthAtDragStart.current = sidebar.getWidth();
+					resizeDrag.start();
 				}}
+				onResizeEnd={resizeDrag.end}
 				onResize={(deltaX) =>
 					sidebar.setWidth(widthAtDragStart.current + deltaX)
 				}
