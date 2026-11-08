@@ -27,6 +27,24 @@
 			"recommended": true
 		}
 	},
+	"overrides": [
+		{
+			"includes": ["**/src/lib/file-preview/**"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noArrayIndexKey": "off",
+						"noAssignInExpressions": "off"
+					},
+					"correctness": { "useExhaustiveDependencies": "off" },
+					"a11y": {
+						"noNoninteractiveTabindex": "off",
+						"useSemanticElements": "off"
+					}
+				}
+			}
+		}
+	],
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"

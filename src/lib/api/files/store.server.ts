@@ -16,13 +16,13 @@ const globalStore = globalThis as typeof globalThis & {
 const files: Map<string, StoredFile> =
 	globalStore.__agenticUiFiles ??
 	new Map(
-		SEED_FILES.map(({ content, ...record }) => [
-			record.id,
-			{
-				record: { ...record, size: new TextEncoder().encode(content).length },
-				bytes: new TextEncoder().encode(content),
-			},
-		]),
+		SEED_FILES.map(({ content, ...record }) => {
+			const bytes =
+				typeof content === "string"
+					? new TextEncoder().encode(content)
+					: content;
+			return [record.id, { record: { ...record, size: bytes.length }, bytes }];
+		}),
 	);
 
 globalStore.__agenticUiFiles = files;

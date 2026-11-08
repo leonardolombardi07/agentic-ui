@@ -25,7 +25,7 @@ import {
 	fileDownloadUrl,
 	type SessionFile,
 } from "@/lib/api/types/file";
-import { FilePreview, fileIcon, formatBytes } from "@/lib/file-preview";
+import { fileIcon, formatBytes, SessionFilePreview } from "@/lib/file-preview";
 import { useWorkspaceCommands } from "../../../commands";
 import { workspace } from "../../../store";
 import { IconAction } from "./pane-chrome";
@@ -208,7 +208,7 @@ function FileDetail({
 				</Tooltip>
 			</div>
 			<div className="min-h-0 flex-1 overflow-auto">
-				<FilePreview file={file} />
+				<SessionFilePreview file={file} />
 			</div>
 		</div>
 	);

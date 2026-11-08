@@ -9,6 +9,8 @@ import { defineConfig } from "vite";
 
 const config = defineConfig({
 	resolve: { tsconfigPaths: true },
+	// Office files are seeded as `?inline` imports (lib/api/files/seed.server.ts).
+	assetsInclude: ["**/*.xlsx", "**/*.docx"],
 	plugins: [
 		devtools(),
 		nitro({ rollupConfig: { external: [/^@sentry\//] } }),

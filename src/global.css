@@ -236,6 +236,30 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/*
+ * A white document page (Word documents, spreadsheet grids) in either theme: documents are
+ * authored on white, so their colours only read right there. Re-scopes the light palette.
+ */
+.paper {
+  --background: #ffffff;
+  --foreground: #141414;
+  --muted: #f0f0f2;
+  --muted-foreground: #6b6b70;
+  --accent: #1414140d;
+  --border: #1414141a;
+  --brand-text: #0064c8;
+  color: var(--foreground);
+  color-scheme: light;
+}
+
+/* Shiki tokens carry both themes' colours (see lib/file-preview/lib/shiki.ts). */
+[data-shiki] [style*="--shiki-light"] {
+  color: var(--shiki-light);
+}
+.dark [data-shiki] [style*="--shiki-dark"] {
+  color: var(--shiki-dark);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

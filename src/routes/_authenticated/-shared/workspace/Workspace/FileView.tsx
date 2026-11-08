@@ -10,7 +10,7 @@ import {
 import { fileQueryOptions } from "@/lib/api/files/queries";
 import { sessionQueryOptions } from "@/lib/api/sessions/queries";
 import { fileDownloadUrl } from "@/lib/api/types/file";
-import { FilePreview, fileIcon, formatBytes } from "@/lib/file-preview";
+import { fileIcon, formatBytes, SessionFilePreview } from "@/lib/file-preview";
 import { useWorkspaceCommands } from "../commands";
 import type { FileTab } from "../model";
 
@@ -84,7 +84,7 @@ export function FileView({ tab, groupId }: { tab: FileTab; groupId: string }) {
 				</Tooltip>
 			</header>
 			<div className="min-h-0 flex-1 overflow-auto">
-				<FilePreview file={file} />
+				<SessionFilePreview file={file} />
 			</div>
 		</div>
 	);

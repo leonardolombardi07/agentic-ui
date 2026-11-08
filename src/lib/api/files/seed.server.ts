@@ -1,11 +1,33 @@
 import type { SessionFile } from "@/lib/api/types/file";
+import boardMemoDocx from "./samples/board-memo.docx?inline";
+import budgetXlsx from "./samples/budget-2027.xlsx?inline";
+import corruptedXlsx from "./samples/corrupted-export.xlsx?inline";
+import q3ReportPdf from "./samples/q3-earnings-report.pdf?inline";
+import q3FinancialsXlsx from "./samples/q3-financials.xlsx?inline";
+import securityReviewPdf from "./samples/security-review.pdf?inline";
 
 /*
  * Fictional files for the seeded sessions (`sessions/store.server.ts`), so the Files
  * pane and its previews have something to show in dev. One of each preview type.
+ *
+ * The binary ones (PDF, Excel, Word) live in `./samples`, made by
+ * `scripts/generate-sample-files.py`; they're also handy to upload by hand.
  */
 
-type SeedFile = Omit<SessionFile, "size"> & { content: string };
+type SeedFile = Omit<SessionFile, "size"> & {
+	content: string | Uint8Array<ArrayBuffer>;
+};
+
+/** Vite's `?inline` gives a base64 data URL; the store wants the bytes. */
+function bytesOf(dataUrl: string): Uint8Array<ArrayBuffer> {
+	const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+	return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+}
+
+const XLSX_TYPE =
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const DOCX_TYPE =
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 const Q3 = "s-q3-earnings";
 const AUTH = "s-auth-pr";
@@ -92,6 +114,66 @@ Revenue reached **$1.19B**, up 11.7% year over year. Growth came mostly from
 		messageId: null,
 		createdAt: "2026-10-30T18:14:00.000Z",
 		content: revenueChartSvg(),
+	},
+	{
+		id: "f-q3-financials-xlsx",
+		sessionId: Q3,
+		name: "q3-financials.xlsx",
+		mediaType: XLSX_TYPE,
+		origin: "uploaded",
+		messageId: null,
+		createdAt: "2026-10-30T18:02:00.000Z",
+		content: bytesOf(q3FinancialsXlsx),
+	},
+	{
+		id: "f-q3-report-pdf",
+		sessionId: Q3,
+		name: "q3-earnings-report.pdf",
+		mediaType: "application/pdf",
+		origin: "generated",
+		messageId: null,
+		createdAt: "2026-10-30T18:14:00.000Z",
+		content: bytesOf(q3ReportPdf),
+	},
+	{
+		id: "f-q3-corrupted-xlsx",
+		sessionId: Q3,
+		name: "corrupted-export.xlsx",
+		mediaType: XLSX_TYPE,
+		origin: "uploaded",
+		messageId: null,
+		createdAt: "2026-10-30T18:03:00.000Z",
+		content: bytesOf(corruptedXlsx),
+	},
+	{
+		id: "f-auth-security-review-pdf",
+		sessionId: AUTH,
+		name: "security-review.pdf",
+		mediaType: "application/pdf",
+		origin: "generated",
+		messageId: null,
+		createdAt: "2026-10-29T10:20:00.000Z",
+		content: bytesOf(securityReviewPdf),
+	},
+	{
+		id: "f-deck-budget-xlsx",
+		sessionId: DECK,
+		name: "budget-2027.xlsx",
+		mediaType: XLSX_TYPE,
+		origin: "uploaded",
+		messageId: null,
+		createdAt: "2026-10-28T09:00:00.000Z",
+		content: bytesOf(budgetXlsx),
+	},
+	{
+		id: "f-deck-board-memo-docx",
+		sessionId: DECK,
+		name: "board-memo.docx",
+		mediaType: DOCX_TYPE,
+		origin: "generated",
+		messageId: null,
+		createdAt: "2026-10-28T09:30:00.000Z",
+		content: bytesOf(boardMemoDocx),
 	},
 	{
 		id: "f-auth-middleware",
