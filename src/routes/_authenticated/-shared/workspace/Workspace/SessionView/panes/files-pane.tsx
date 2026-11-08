@@ -2,9 +2,11 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
 import {
 	ArrowLeftIcon,
+	Columns2Icon,
 	DownloadIcon,
 	FolderIcon,
 	SparklesIcon,
+	SquareArrowOutUpRightIcon,
 	UploadIcon,
 } from "lucide-react";
 import { useRef } from "react";
@@ -24,7 +26,9 @@ import {
 	type SessionFile,
 } from "@/lib/api/types/file";
 import { FilePreview, fileIcon, formatBytes } from "@/lib/file-preview";
+import { useWorkspaceCommands } from "../../../commands";
 import { workspace } from "../../../store";
+import { IconAction } from "./pane-chrome";
 import type { PaneProps } from "./registry";
 
 const GROUPS: { origin: FileOrigin; label: string }[] = [
@@ -38,6 +42,10 @@ const GROUPS: { origin: FileOrigin; label: string }[] = [
  * pane moving between docked and sheet, and message chips can open a file directly.
  */
 export function FilesPane({ session, tabRef, selectedFileId }: PaneProps) {
+	const commands = useWorkspaceCommands();
+	function openToSide(fileId: string) {
+		commands.openToSide({ kind: "file", fileId });
+	}
 	const { data: files = [], isPending } = useQuery({
 		...sessionFilesQueryOptions(session.id),
 		// A draft isn't on the server yet, so it can't have files.
@@ -50,6 +58,8 @@ export function FilesPane({ session, tabRef, selectedFileId }: PaneProps) {
 			<FileDetail
 				file={selected}
 				onBack={() => workspace.selectFile(tabRef, null)}
+				onOpenAsTab={() => commands.open({ kind: "file", fileId: selected.id })}
+				onOpenToSide={() => openToSide(selected.id)}
 			/>
 		);
 	}
@@ -82,6 +92,7 @@ export function FilesPane({ session, tabRef, selectedFileId }: PaneProps) {
 											<FileRow
 												file={file}
 												onOpen={() => workspace.selectFile(tabRef, file.id)}
+												onOpenToSide={() => openToSide(file.id)}
 											/>
 										</li>
 									))}
@@ -96,12 +107,24 @@ export function FilesPane({ session, tabRef, selectedFileId }: PaneProps) {
 	);
 }
 
-function FileRow({ file, onOpen }: { file: SessionFile; onOpen: () => void }) {
+function FileRow({
+	file,
+	onOpen,
+	onOpenToSide,
+}: {
+	file: SessionFile;
+	onOpen: () => void;
+	onOpenToSide: () => void;
+}) {
 	const Icon = fileIcon(file);
 	return (
 		<button
 			type="button"
-			onClick={onOpen}
+			// Ctrl/Cmd+click opens it to the side, as in VSCode's explorer.
+			onClick={(event) =>
+				event.ctrlKey || event.metaKey ? onOpenToSide() : onOpen()
+			}
+			aria-description="Ctrl+click opens it to the side"
 			className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring"
 			data-testid="file-row"
 		>
@@ -119,9 +142,13 @@ function FileRow({ file, onOpen }: { file: SessionFile; onOpen: () => void }) {
 function FileDetail({
 	file,
 	onBack,
+	onOpenAsTab,
+	onOpenToSide,
 }: {
 	file: SessionFile;
 	onBack: () => void;
+	onOpenAsTab: () => void;
+	onOpenToSide: () => void;
 }) {
 	return (
 		<div className="flex h-full flex-col" data-testid="file-detail">
@@ -148,6 +175,20 @@ function FileDetail({
 				<span className="shrink-0 text-xs text-muted-foreground tabular-nums">
 					{formatBytes(file.size)}
 				</span>
+				<IconAction
+					label="Open as tab"
+					onClick={onOpenAsTab}
+					testId="file-open-tab"
+				>
+					<SquareArrowOutUpRightIcon />
+				</IconAction>
+				<IconAction
+					label="Open to the side"
+					onClick={onOpenToSide}
+					testId="file-open-side"
+				>
+					<Columns2Icon />
+				</IconAction>
 				<Tooltip>
 					<TooltipTrigger
 						render={

@@ -170,7 +170,8 @@ function TextPreview({
 	if (kind === "markdown")
 		return (
 			<div className="p-4" data-testid="file-preview-markdown">
-				<Markdown>{data}</Markdown>
+				{/* A readable line length when it has a whole tab; panes are narrower anyway. */}
+				<Markdown className="mx-auto max-w-3xl">{data}</Markdown>
 			</div>
 		);
 	if (kind === "csv") return <CsvTable text={data} />;

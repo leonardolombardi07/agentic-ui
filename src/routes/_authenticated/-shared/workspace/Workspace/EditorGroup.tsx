@@ -3,6 +3,7 @@ import { useWorkspaceCommands } from "../commands";
 import type { EditorGroup as EditorGroupType } from "../model";
 import { useWorkspace } from "../store";
 import { AgentView } from "./AgentView";
+import { FileView } from "./FileView";
 import { SessionView } from "./SessionView";
 import { TabBar } from "./TabBar";
 
@@ -27,6 +28,8 @@ export function EditorGroup({ group }: { group: EditorGroupType }) {
 				{/* Only the active tab is mounted; the rest are records in the store. */}
 				{activeTab?.kind === "agent" ? (
 					<AgentView key={activeTab.id} tab={activeTab} groupId={group.id} />
+				) : activeTab?.kind === "file" ? (
+					<FileView key={activeTab.id} tab={activeTab} groupId={group.id} />
 				) : activeTab ? (
 					<SessionView key={activeTab.id} tab={activeTab} groupId={group.id} />
 				) : (

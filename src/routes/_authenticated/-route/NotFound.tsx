@@ -9,7 +9,7 @@ export function NotFound() {
 		>
 			<h1 className="text-xl font-medium">Not found</h1>
 			<p className="text-sm text-muted-foreground">
-				This page, session or agent doesn't exist.
+				This page, session, agent or file doesn't exist.
 			</p>
 			<Link to="/" className={buttonVariants({ variant: "secondary" })}>
 				Go home

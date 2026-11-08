@@ -20,8 +20,8 @@ type MessagesProps = {
 	footer?: React.ReactNode;
 	/** The session's files, to show what each user message attached. */
 	files: ReadonlyArray<SessionFile>;
-	/** Opens a file in the Files pane. */
-	onOpenFile: (fileId: string) => void;
+	/** Opens a file: in the Files pane, or as a tab in the other group (`toSide`). */
+	onOpenFile: (fileId: string, options: { toSide: boolean }) => void;
 };
 
 /**
@@ -86,7 +86,7 @@ function Message({
 	message: UIMessage;
 	isStreaming: boolean;
 	files: ReadonlyArray<SessionFile>;
-	onOpenFile: (fileId: string) => void;
+	onOpenFile: (fileId: string, options: { toSide: boolean }) => void;
 }) {
 	if (message.role === "user") {
 		const attached = messageFiles(message, files);
@@ -103,7 +103,10 @@ function Message({
 					>
 						{attached.map((file) => (
 							<li key={file.id}>
-								<FileChip file={file} onOpen={() => onOpenFile(file.id)} />
+								<FileChip
+									file={file}
+									onOpen={(toSide) => onOpenFile(file.id, { toSide })}
+								/>
 							</li>
 						))}
 					</ul>
@@ -170,12 +173,20 @@ function Message({
 }
 
 /** A file the user attached; opens it in the Files pane. */
-function FileChip({ file, onOpen }: { file: SessionFile; onOpen: () => void }) {
+function FileChip({
+	file,
+	onOpen,
+}: {
+	file: SessionFile;
+	/** `toSide`: Ctrl/Cmd+click, which opens it as a tab in the other group. */
+	onOpen: (toSide: boolean) => void;
+}) {
 	const Icon = fileIcon(file);
 	return (
 		<button
 			type="button"
-			onClick={onOpen}
+			onClick={(event) => onOpen(event.ctrlKey || event.metaKey)}
+			aria-description="Ctrl+click opens it to the side"
 			className="flex max-w-60 items-center gap-2 rounded-xl border border-border bg-background px-2.5 py-1.5 text-left text-xs outline-none transition-colors hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring"
 			data-testid="message-file"
 		>

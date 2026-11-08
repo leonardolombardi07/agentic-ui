@@ -20,6 +20,14 @@ export async function listSessionFiles(
 	return filesTable.listBySession(sessionId);
 }
 
+/** A file's record. `null` when it doesn't exist or isn't the caller's. */
+export async function getFile(
+	ownerId: string,
+	fileId: string,
+): Promise<SessionFile | null> {
+	return (await getOwnedFile(ownerId, fileId))?.record ?? null;
+}
+
 export async function getOwnedFile(ownerId: string, fileId: string) {
 	const file = await filesTable.get(fileId);
 	if (!file) return null;

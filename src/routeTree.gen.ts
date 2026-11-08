@@ -19,6 +19,7 @@ import { Route as AuthenticatedSessionsAllRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSessionsNewRouteImport } from './routes/_authenticated/sessions/new'
 import { Route as ApiChatIndexRouteImport } from './routes/api/chat/index'
 import { Route as AuthenticatedAgentsAgentIdIndexRouteImport } from './routes/_authenticated/agents/$agentId/index'
+import { Route as AuthenticatedFilesFileIdIndexRouteImport } from './routes/_authenticated/files/$fileId/index'
 import { Route as AuthenticatedSessionsSessionIdIndexRouteImport } from './routes/_authenticated/sessions/$sessionId/index'
 import { Route as ApiFilesFileIdIndexRouteImport } from './routes/api/files/$fileId/index'
 import { Route as ApiSessionsSessionIdFilesIndexRouteImport } from './routes/api/sessions/$sessionId/files/index'
@@ -78,6 +79,12 @@ const AuthenticatedAgentsAgentIdIndexRoute =
     path: '/agents/$agentId/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFilesFileIdIndexRoute =
+  AuthenticatedFilesFileIdIndexRouteImport.update({
+    id: '/files/$fileId/',
+    path: '/files/$fileId/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSessionsSessionIdIndexRoute =
   AuthenticatedSessionsSessionIdIndexRouteImport.update({
     id: '/$sessionId/',
@@ -106,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/sessions/': typeof AuthenticatedSessionsIndexRoute
   '/api/chat/': typeof ApiChatIndexRoute
   '/agents/$agentId/': typeof AuthenticatedAgentsAgentIdIndexRoute
+  '/files/$fileId/': typeof AuthenticatedFilesFileIdIndexRoute
   '/sessions/$sessionId/': typeof AuthenticatedSessionsSessionIdIndexRoute
   '/api/files/$fileId/': typeof ApiFilesFileIdIndexRoute
   '/api/sessions/$sessionId/files/': typeof ApiSessionsSessionIdFilesIndexRoute
@@ -119,6 +127,7 @@ export interface FileRoutesByTo {
   '/sessions': typeof AuthenticatedSessionsIndexRoute
   '/api/chat': typeof ApiChatIndexRoute
   '/agents/$agentId': typeof AuthenticatedAgentsAgentIdIndexRoute
+  '/files/$fileId': typeof AuthenticatedFilesFileIdIndexRoute
   '/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdIndexRoute
   '/api/files/$fileId': typeof ApiFilesFileIdIndexRoute
   '/api/sessions/$sessionId/files': typeof ApiSessionsSessionIdFilesIndexRoute
@@ -135,6 +144,7 @@ export interface FileRoutesById {
   '/_authenticated/sessions/': typeof AuthenticatedSessionsIndexRoute
   '/api/chat/': typeof ApiChatIndexRoute
   '/_authenticated/agents/$agentId/': typeof AuthenticatedAgentsAgentIdIndexRoute
+  '/_authenticated/files/$fileId/': typeof AuthenticatedFilesFileIdIndexRoute
   '/_authenticated/sessions/$sessionId/': typeof AuthenticatedSessionsSessionIdIndexRoute
   '/api/files/$fileId/': typeof ApiFilesFileIdIndexRoute
   '/api/sessions/$sessionId/files/': typeof ApiSessionsSessionIdFilesIndexRoute
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/sessions/'
     | '/api/chat/'
     | '/agents/$agentId/'
+    | '/files/$fileId/'
     | '/sessions/$sessionId/'
     | '/api/files/$fileId/'
     | '/api/sessions/$sessionId/files/'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/sessions'
     | '/api/chat'
     | '/agents/$agentId'
+    | '/files/$fileId'
     | '/sessions/$sessionId'
     | '/api/files/$fileId'
     | '/api/sessions/$sessionId/files'
@@ -179,6 +191,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sessions/'
     | '/api/chat/'
     | '/_authenticated/agents/$agentId/'
+    | '/_authenticated/files/$fileId/'
     | '/_authenticated/sessions/$sessionId/'
     | '/api/files/$fileId/'
     | '/api/sessions/$sessionId/files/'
@@ -263,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAgentsAgentIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/files/$fileId/': {
+      id: '/_authenticated/files/$fileId/'
+      path: '/files/$fileId'
+      fullPath: '/files/$fileId/'
+      preLoaderRoute: typeof AuthenticatedFilesFileIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/sessions/$sessionId/': {
       id: '/_authenticated/sessions/$sessionId/'
       path: '/$sessionId'
@@ -314,6 +334,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAgentsIndexRoute: typeof AuthenticatedAgentsIndexRoute
   AuthenticatedAgentsAgentIdIndexRoute: typeof AuthenticatedAgentsAgentIdIndexRoute
+  AuthenticatedFilesFileIdIndexRoute: typeof AuthenticatedFilesFileIdIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -322,6 +343,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAgentsIndexRoute: AuthenticatedAgentsIndexRoute,
   AuthenticatedAgentsAgentIdIndexRoute: AuthenticatedAgentsAgentIdIndexRoute,
+  AuthenticatedFilesFileIdIndexRoute: AuthenticatedFilesFileIdIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

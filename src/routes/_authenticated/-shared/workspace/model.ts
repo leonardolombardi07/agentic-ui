@@ -65,8 +65,21 @@ export const AgentTabSchema = TabBaseSchema.extend({
 	agentId: z.string(),
 });
 
-/* A plain union, not a discriminated one: old session tabs have no `kind` to discriminate on. */
-export const TabSchema = z.union([AgentTabSchema, SessionTabSchema]);
+/** A session file opened as an editor, to read it big or next to another session. */
+export const FileTabSchema = TabBaseSchema.extend({
+	kind: z.literal("file"),
+	fileId: z.string(),
+});
+
+/*
+ * A plain union, not a discriminated one: old session tabs have no `kind` to
+ * discriminate on. Session last, since it accepts a missing `kind`.
+ */
+export const TabSchema = z.union([
+	AgentTabSchema,
+	FileTabSchema,
+	SessionTabSchema,
+]);
 
 export const EditorGroupSchema = z.object({
 	id: z.string(),
@@ -95,6 +108,7 @@ export type PaneId = z.infer<typeof PaneIdSchema>;
 export type Panes = z.infer<typeof PanesSchema>;
 export type SessionTab = z.infer<typeof SessionTabSchema>;
 export type AgentTab = z.infer<typeof AgentTabSchema>;
+export type FileTab = z.infer<typeof FileTabSchema>;
 export type Tab = z.infer<typeof TabSchema>;
 export type EditorGroup = z.infer<typeof EditorGroupSchema>;
 export type Workspace = z.infer<typeof WorkspaceSchema>;
@@ -102,7 +116,8 @@ export type TabRef = { groupId: string; tabId: string };
 /** What a tab shows. Two tabs with the same target show the same thing. */
 export type TabTarget =
 	| { kind: "session"; sessionId: string }
-	| { kind: "agent"; agentId: string };
+	| { kind: "agent"; agentId: string }
+	| { kind: "file"; fileId: string };
 export type TabInit = {
 	composerDraft?: string;
 	scrollTop?: number | null;
@@ -135,6 +150,9 @@ function newTab(target: TabTarget, init?: TabInit): Tab {
 	if (target.kind === "agent") {
 		return { ...base, kind: "agent", agentId: target.agentId };
 	}
+	if (target.kind === "file") {
+		return { ...base, kind: "file", fileId: target.fileId };
+	}
 	return {
 		...base,
 		kind: "session",
@@ -144,16 +162,25 @@ function newTab(target: TabTarget, init?: TabInit): Tab {
 }
 
 export function getTabTarget(tab: Tab): TabTarget {
-	return tab.kind === "agent"
-		? { kind: "agent", agentId: tab.agentId }
-		: { kind: "session", sessionId: tab.sessionId };
+	switch (tab.kind) {
+		case "agent":
+			return { kind: "agent", agentId: tab.agentId };
+		case "file":
+			return { kind: "file", fileId: tab.fileId };
+		case "session":
+			return { kind: "session", sessionId: tab.sessionId };
+	}
 }
 
 export function isTabFor(tab: Tab, target: TabTarget): boolean {
-	if (target.kind === "agent") {
-		return tab.kind === "agent" && tab.agentId === target.agentId;
+	switch (target.kind) {
+		case "agent":
+			return tab.kind === "agent" && tab.agentId === target.agentId;
+		case "file":
+			return tab.kind === "file" && tab.fileId === target.fileId;
+		case "session":
+			return tab.kind === "session" && tab.sessionId === target.sessionId;
 	}
-	return tab.kind === "session" && tab.sessionId === target.sessionId;
 }
 
 export function getActiveGroup(ws: Workspace): EditorGroup {

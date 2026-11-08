@@ -15,11 +15,13 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { agentQueryOptions } from "@/lib/api/agents/queries";
+import { fileQueryOptions } from "@/lib/api/files/queries";
 import { sessionQueryOptions } from "@/lib/api/sessions/queries";
+import { fileIcon } from "@/lib/file-preview";
 import { AgentAvatar } from "../../agent-avatar";
 import { AgentIndicator } from "../../agent-indicator";
 import { useWorkspaceCommands } from "../commands";
-import type { AgentTab, EditorGroup, SessionTab, Tab } from "../model";
+import type { AgentTab, EditorGroup, FileTab, SessionTab, Tab } from "../model";
 import { useWorkspace } from "../store";
 
 export function TabBar({
@@ -61,6 +63,8 @@ export function TabBar({
 					};
 					return tab.kind === "agent" ? (
 						<AgentTabItem key={tab.id} tab={tab} {...props} />
+					) : tab.kind === "file" ? (
+						<FileTabItem key={tab.id} tab={tab} {...props} />
 					) : (
 						<SessionTabItem key={tab.id} tab={tab} {...props} />
 					);
@@ -169,6 +173,23 @@ function AgentTabItem({ tab, ...props }: TabItemProps & { tab: AgentTab }) {
 			kind="agent"
 			icon={agent ? <AgentAvatar agent={agent} className="size-4" /> : null}
 			title={isError ? "Agent not found" : (agent?.name ?? "Loading...")}
+		/>
+	);
+}
+
+function FileTabItem({ tab, ...props }: TabItemProps & { tab: FileTab }) {
+	const { data: file, isError } = useQuery(fileQueryOptions(tab.fileId));
+	const Icon = file ? fileIcon(file) : null;
+	return (
+		<TabItem
+			{...props}
+			kind="file"
+			icon={
+				Icon ? (
+					<Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+				) : null
+			}
+			title={isError ? "File not found" : (file?.name ?? "Loading...")}
 		/>
 	);
 }

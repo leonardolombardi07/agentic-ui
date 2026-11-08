@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_authenticated/sessions/")({
 	component: SessionsIndex,
 });
 
-/** Keeps "URL = focused tab": redirect to the active tab (a session or an agent), else show the workspace's empty state. */
+/** Keeps "URL = focused tab": redirect to the active tab (a session, an agent or a file), else show the workspace's empty state. */
 function SessionsIndex() {
 	const navigate = useNavigate();
 	// Primitives, so the selectors stay stable.
@@ -19,6 +19,10 @@ function SessionsIndex() {
 	const activeAgentId = useWorkspace((ws) => {
 		const tab = getActiveTab(ws);
 		return tab?.kind === "agent" ? tab.agentId : null;
+	});
+	const activeFileId = useWorkspace((ws) => {
+		const tab = getActiveTab(ws);
+		return tab?.kind === "file" ? tab.fileId : null;
 	});
 
 	useLayoutEffect(() => {
@@ -34,8 +38,14 @@ function SessionsIndex() {
 				params: { agentId: activeAgentId },
 				replace: true,
 			});
+		} else if (activeFileId) {
+			void navigate({
+				to: "/files/$fileId",
+				params: { fileId: activeFileId },
+				replace: true,
+			});
 		}
-	}, [activeSessionId, activeAgentId, navigate]);
+	}, [activeSessionId, activeAgentId, activeFileId, navigate]);
 
 	return null;
 }

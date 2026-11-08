@@ -68,6 +68,7 @@ function SessionChat({
 	tab: SessionTab;
 	groupId: string;
 }) {
+	const commands = useWorkspaceCommands();
 	const chat = useSessionChat(session);
 	const update = useMutation(updateSessionMutationOptions());
 	const { data: files = [] } = useQuery({
@@ -120,7 +121,11 @@ function SessionChat({
 					<Messages
 						messages={chat.messages}
 						files={files}
-						onOpenFile={layout.openFile}
+						onOpenFile={(fileId, { toSide }) =>
+							toSide
+								? commands.openToSide({ kind: "file", fileId })
+								: layout.openFile(fileId)
+						}
 						isRunning={chat.isRunning}
 						emptyState={
 							chat.isHydrating ? (

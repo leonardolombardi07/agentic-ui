@@ -1,6 +1,7 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import { isNotFound, notFound } from "@tanstack/react-router";
 import { type SessionFile, SessionFileSchema } from "@/lib/api/types/file";
-import { listSessionFilesFn } from "./functions";
+import { getFileFn, listSessionFilesFn } from "./functions";
 
 /** A session's files, oldest first. Empty for a session that isn't on the server yet. */
 export function sessionFilesQueryOptions(sessionId: string) {
@@ -8,6 +9,21 @@ export function sessionFilesQueryOptions(sessionId: string) {
 		queryKey: ["sessions", sessionId, "files"],
 		queryFn: async () =>
 			(await listSessionFilesFn({ data: { sessionId } })) ?? [],
+	});
+}
+
+/** One file's record. Throws `notFound()` when it's missing, so routes can 404 on it. */
+export function fileQueryOptions(fileId: string) {
+	return queryOptions({
+		queryKey: ["files", fileId],
+		queryFn: async () => {
+			const file = await getFileFn({ data: { fileId } });
+			if (!file) throw notFound();
+			return file;
+		},
+		// A file never changes: a new upload is a new id.
+		staleTime: Number.POSITIVE_INFINITY,
+		retry: (failureCount, error) => !isNotFound(error) && failureCount < 3,
 	});
 }
 

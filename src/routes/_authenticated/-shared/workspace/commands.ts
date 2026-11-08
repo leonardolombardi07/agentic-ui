@@ -1,6 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { snackbar } from "@/components/ui/snackbar";
 import {
+	getActiveGroup,
 	getActiveTabRef,
 	getSideGroup,
 	getTabTarget,
@@ -42,6 +43,14 @@ export function useWorkspaceCommands() {
 			.groups.find((g) => g.id === ref.groupId)
 			?.tabs.find((t) => t.id === ref.tabId);
 		if (!tab) return;
+		if (tab.kind === "file") {
+			return router.navigate({
+				to: "/files/$fileId",
+				params: { fileId: tab.fileId },
+				state: (prev) => ({ ...prev, workspaceTab: ref }),
+				replace,
+			});
+		}
 		if (tab.kind === "agent") {
 			return router.navigate({
 				to: "/agents/$agentId",
@@ -59,6 +68,15 @@ export function useWorkspaceCommands() {
 	}
 
 	return {
+		/** Opens `target` as a tab in the active group (or focuses its tab there). */
+		open(target: TabTarget) {
+			if (!hasRoomFor(getActiveGroup(workspace.getState()), target)) {
+				warnTabLimit();
+				return;
+			}
+			workspace.open(target);
+			void syncUrl({ replace: false });
+		},
 		openToSide(target: TabTarget) {
 			if (!hasRoomFor(getSideGroup(workspace.getState()), target)) {
 				warnTabLimit();
