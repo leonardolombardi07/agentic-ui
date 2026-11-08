@@ -1,0 +1,2 @@
+# Sample files seeded into sessions: never convert line endings.
+src/lib/api/files/samples/** binary
