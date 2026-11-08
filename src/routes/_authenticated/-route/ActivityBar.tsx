@@ -3,6 +3,7 @@ import {
 	Link,
 	type LinkProps,
 	useHydrated,
+	useLocation,
 	useSearch,
 } from "@tanstack/react-router";
 import { cn } from "cn";
@@ -70,11 +71,7 @@ export function ActivityBar() {
 			<SearchItem />
 			<ViewItem view="sessions" label="Sessions" icon={MessagesSquareIcon} />
 			<ViewItem view="agents" label="Agents" icon={BotIcon} />
-			<ModalItem
-				modal="customizations"
-				label="Customizations"
-				icon={PuzzleIcon}
-			/>
+			<CustomizeItem />
 			<div className="my-1 h-px w-8 bg-sidebar-border" />
 			<LinkItem
 				to="/admin"
@@ -249,7 +246,7 @@ function ModalItem({
 	label,
 	icon: Icon,
 }: {
-	modal: "settings" | "customizations";
+	modal: "settings";
 	label: string;
 	icon: LucideIcon;
 }) {
@@ -263,15 +260,7 @@ function ModalItem({
 				render={
 					<Link
 						to="."
-						search={(prev) =>
-							modal === "settings"
-								? { ...prev, customizations: undefined, settings: "general" }
-								: {
-										...prev,
-										settings: undefined,
-										customizations: "instructions",
-									}
-						}
+						search={(prev) => ({ ...prev, settings: "general" })}
 						state={(prev) => ({ ...prev, modalOpenedInApp: true })}
 						aria-label={label}
 						aria-haspopup="dialog"
@@ -283,6 +272,30 @@ function ModalItem({
 				<Icon />
 			</TooltipTrigger>
 			<TooltipContent side="right">{label}</TooltipContent>
+		</Tooltip>
+	);
+}
+
+/** Opens Customize (skills, connectors, prompts). Active on any of its pages. */
+function CustomizeItem() {
+	const isActive = useLocation({
+		select: (l) => /^\/(skills|connectors|prompts)(\/|$)/.test(l.pathname),
+	});
+	return (
+		<Tooltip>
+			<TooltipTrigger
+				render={
+					<Link
+						to="/skills"
+						aria-label="Customize"
+						className={cn(itemClassName, isActive && activeClassName)}
+						data-testid="activity-customize"
+					/>
+				}
+			>
+				<PuzzleIcon />
+			</TooltipTrigger>
+			<TooltipContent side="right">Customize</TooltipContent>
 		</Tooltip>
 	);
 }

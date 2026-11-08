@@ -1,16 +1,16 @@
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import type { ModalName } from "./search";
+import type { ModalName, SettingsSection } from "./search";
 import { useCloseModal } from "./use-close-modal";
 
-type Section<T extends string> = { id: T; label: string };
+type Section<T extends SettingsSection> = { id: T; label: string };
 
 /**
- * Modal with a category nav (left) and the section content (right). Shared by
- * Settings and Customizations. Sections without content yet show just their title.
+ * Modal with a category nav (left) and the section content (right). Used by
+ * Settings. Sections without content yet show just their title.
  */
-export function SectionsModal<T extends string>({
+export function SectionsModal<T extends SettingsSection>({
 	name,
 	title,
 	sections,
@@ -55,7 +55,7 @@ export function SectionsModal<T extends string>({
 							<Link
 								key={section.id}
 								to="."
-								search={(prev) => ({ ...prev, [name]: section.id })}
+								search={(prev) => ({ ...prev, settings: section.id })}
 								// Switching sections doesn't add history entries; Back closes the modal.
 								replace
 								state={(prev) => prev}

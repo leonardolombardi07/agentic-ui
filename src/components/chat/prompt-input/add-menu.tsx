@@ -18,7 +18,7 @@ type PromptInputAddMenuProps = {
 	onFilesSelected: (files: File[]) => void;
 	/** Passed to the file input, e.g. ".pdf,.xlsx" or "image/*". */
 	accept?: string;
-	/** Extra items after "Upload files" (skills, tools, ...). */
+	/** Extra items after "Upload files" (saved prompts, ...). */
 	children?: ReactNode;
 };
 

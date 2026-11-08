@@ -14,11 +14,7 @@ export function useCloseModal() {
 		}
 		void router.navigate({
 			to: ".",
-			search: (prev) => ({
-				...prev,
-				settings: undefined,
-				customizations: undefined,
-			}),
+			search: (prev) => ({ ...prev, settings: undefined }),
 			replace: true,
 		});
 	};

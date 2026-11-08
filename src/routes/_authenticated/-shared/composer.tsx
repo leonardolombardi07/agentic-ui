@@ -3,6 +3,7 @@ import {
 	ArrowUpIcon,
 	BrainIcon,
 	CpuIcon,
+	MessageSquareTextIcon,
 	ShieldIcon,
 	SquareIcon,
 } from "lucide-react";
@@ -21,10 +22,20 @@ import {
 } from "@/components/chat/prompt-input";
 import { Button } from "@/components/ui/button";
 import {
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
 	agentsListQueryOptions,
 	myAgentsListQueryOptions,
 } from "@/lib/api/agents/queries";
 import { modelsListQueryOptions } from "@/lib/api/models/queries";
+import {
+	myPromptIdsQueryOptions,
+	promptsListQueryOptions,
+} from "@/lib/api/prompts/queries";
 import type { EffortLevel, Model } from "@/lib/api/types/model";
 import type { PermissionMode } from "@/lib/api/types/permission-mode";
 import type { SessionSettings } from "@/lib/api/types/session";
@@ -125,6 +136,11 @@ export function Composer({
 	const { data: yourAgents } = useQuery(myAgentsListQueryOptions());
 	const { data: allAgents } = useQuery(agentsListQueryOptions());
 	const { data: models } = useQuery(modelsListQueryOptions());
+	const { data: allPrompts } = useQuery(promptsListQueryOptions());
+	const { data: myPromptIds } = useQuery(myPromptIdsQueryOptions());
+	const yourPrompts = (allPrompts ?? []).filter((p) =>
+		myPromptIds?.includes(p.id),
+	);
 
 	/*
 	 * Local, so picking is instant; owners that keep these (a session) listen through
@@ -206,6 +222,17 @@ export function Composer({
 		]);
 	}
 
+	/** A prompt is plain text, so attaching it appends it to the draft as its own paragraph. */
+	function attachPrompt(text: string) {
+		onDraftChange(
+			draft.trim()
+				? `${draft.trimEnd()}
+
+${text}`
+				: text,
+		);
+	}
+
 	function removeAttachment(id: string) {
 		setAttachments((current) => current.filter((a) => a.id !== id));
 	}
@@ -238,7 +265,26 @@ export function Composer({
 			<PromptInputEditor placeholder={placeholder} autoFocus />
 			<PromptInputActions className="justify-between">
 				<div className="flex min-w-0 flex-wrap items-center gap-0.5">
-					<PromptInputAddMenu onFilesSelected={addFiles} />
+					<PromptInputAddMenu onFilesSelected={addFiles}>
+						{yourPrompts.length > 0 ? (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuGroup>
+									<DropdownMenuLabel>Your prompts</DropdownMenuLabel>
+									{yourPrompts.map((prompt) => (
+									<DropdownMenuItem
+										key={prompt.id}
+										onClick={() => attachPrompt(prompt.text)}
+										data-testid="composer-attach-prompt"
+									>
+										<MessageSquareTextIcon />
+										<span className="truncate">{prompt.name}</span>
+									</DropdownMenuItem>
+									))}
+								</DropdownMenuGroup>
+							</>
+						) : null}
+					</PromptInputAddMenu>
 					<AgentPicker
 						value={agentId}
 						onValueChange={handleAgentIdChange}

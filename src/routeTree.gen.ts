@@ -14,13 +14,19 @@ import { Route as AuthenticatedSessionsRouteRouteImport } from './routes/_authen
 import { Route as AuthenticatedhomeIndexRouteImport } from './routes/_authenticated/(home)/index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAgentsIndexRouteImport } from './routes/_authenticated/agents/index'
+import { Route as AuthenticatedConnectorsIndexRouteImport } from './routes/_authenticated/connectors/index'
+import { Route as AuthenticatedPromptsIndexRouteImport } from './routes/_authenticated/prompts/index'
 import { Route as AuthenticatedSessionsIndexRouteImport } from './routes/_authenticated/sessions/index'
 import { Route as AuthenticatedSessionsAllRouteImport } from './routes/_authenticated/sessions/all'
 import { Route as AuthenticatedSessionsNewRouteImport } from './routes/_authenticated/sessions/new'
+import { Route as AuthenticatedSkillsIndexRouteImport } from './routes/_authenticated/skills/index'
 import { Route as ApiChatIndexRouteImport } from './routes/api/chat/index'
 import { Route as AuthenticatedAgentsAgentIdIndexRouteImport } from './routes/_authenticated/agents/$agentId/index'
+import { Route as AuthenticatedConnectorsConnectorIdIndexRouteImport } from './routes/_authenticated/connectors/$connectorId/index'
 import { Route as AuthenticatedFilesFileIdIndexRouteImport } from './routes/_authenticated/files/$fileId/index'
+import { Route as AuthenticatedPromptsPromptIdIndexRouteImport } from './routes/_authenticated/prompts/$promptId/index'
 import { Route as AuthenticatedSessionsSessionIdIndexRouteImport } from './routes/_authenticated/sessions/$sessionId/index'
+import { Route as AuthenticatedSkillsSkillIdIndexRouteImport } from './routes/_authenticated/skills/$skillId/index'
 import { Route as ApiFilesFileIdIndexRouteImport } from './routes/api/files/$fileId/index'
 import { Route as ApiSessionsSessionIdFilesIndexRouteImport } from './routes/api/sessions/$sessionId/files/index'
 
@@ -50,6 +56,18 @@ const AuthenticatedAgentsIndexRoute =
     path: '/agents/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConnectorsIndexRoute =
+  AuthenticatedConnectorsIndexRouteImport.update({
+    id: '/connectors/',
+    path: '/connectors/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPromptsIndexRoute =
+  AuthenticatedPromptsIndexRouteImport.update({
+    id: '/prompts/',
+    path: '/prompts/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSessionsIndexRoute =
   AuthenticatedSessionsIndexRouteImport.update({
     id: '/',
@@ -68,6 +86,12 @@ const AuthenticatedSessionsNewRoute =
     path: '/new',
     getParentRoute: () => AuthenticatedSessionsRouteRoute,
   } as any)
+const AuthenticatedSkillsIndexRoute =
+  AuthenticatedSkillsIndexRouteImport.update({
+    id: '/skills/',
+    path: '/skills/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiChatIndexRoute = ApiChatIndexRouteImport.update({
   id: '/api/chat/',
   path: '/api/chat/',
@@ -79,10 +103,22 @@ const AuthenticatedAgentsAgentIdIndexRoute =
     path: '/agents/$agentId/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConnectorsConnectorIdIndexRoute =
+  AuthenticatedConnectorsConnectorIdIndexRouteImport.update({
+    id: '/connectors/$connectorId/',
+    path: '/connectors/$connectorId/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFilesFileIdIndexRoute =
   AuthenticatedFilesFileIdIndexRouteImport.update({
     id: '/files/$fileId/',
     path: '/files/$fileId/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPromptsPromptIdIndexRoute =
+  AuthenticatedPromptsPromptIdIndexRouteImport.update({
+    id: '/prompts/$promptId/',
+    path: '/prompts/$promptId/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedSessionsSessionIdIndexRoute =
@@ -90,6 +126,12 @@ const AuthenticatedSessionsSessionIdIndexRoute =
     id: '/$sessionId/',
     path: '/$sessionId/',
     getParentRoute: () => AuthenticatedSessionsRouteRoute,
+  } as any)
+const AuthenticatedSkillsSkillIdIndexRoute =
+  AuthenticatedSkillsSkillIdIndexRouteImport.update({
+    id: '/skills/$skillId/',
+    path: '/skills/$skillId/',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const ApiFilesFileIdIndexRoute = ApiFilesFileIdIndexRouteImport.update({
   id: '/api/files/$fileId/',
@@ -110,11 +152,17 @@ export interface FileRoutesByFullPath {
   '/sessions/new': typeof AuthenticatedSessionsNewRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/agents/': typeof AuthenticatedAgentsIndexRoute
+  '/connectors/': typeof AuthenticatedConnectorsIndexRoute
+  '/prompts/': typeof AuthenticatedPromptsIndexRoute
   '/sessions/': typeof AuthenticatedSessionsIndexRoute
+  '/skills/': typeof AuthenticatedSkillsIndexRoute
   '/api/chat/': typeof ApiChatIndexRoute
   '/agents/$agentId/': typeof AuthenticatedAgentsAgentIdIndexRoute
+  '/connectors/$connectorId/': typeof AuthenticatedConnectorsConnectorIdIndexRoute
   '/files/$fileId/': typeof AuthenticatedFilesFileIdIndexRoute
+  '/prompts/$promptId/': typeof AuthenticatedPromptsPromptIdIndexRoute
   '/sessions/$sessionId/': typeof AuthenticatedSessionsSessionIdIndexRoute
+  '/skills/$skillId/': typeof AuthenticatedSkillsSkillIdIndexRoute
   '/api/files/$fileId/': typeof ApiFilesFileIdIndexRoute
   '/api/sessions/$sessionId/files/': typeof ApiSessionsSessionIdFilesIndexRoute
 }
@@ -124,11 +172,17 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedhomeIndexRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/agents': typeof AuthenticatedAgentsIndexRoute
+  '/connectors': typeof AuthenticatedConnectorsIndexRoute
+  '/prompts': typeof AuthenticatedPromptsIndexRoute
   '/sessions': typeof AuthenticatedSessionsIndexRoute
+  '/skills': typeof AuthenticatedSkillsIndexRoute
   '/api/chat': typeof ApiChatIndexRoute
   '/agents/$agentId': typeof AuthenticatedAgentsAgentIdIndexRoute
+  '/connectors/$connectorId': typeof AuthenticatedConnectorsConnectorIdIndexRoute
   '/files/$fileId': typeof AuthenticatedFilesFileIdIndexRoute
+  '/prompts/$promptId': typeof AuthenticatedPromptsPromptIdIndexRoute
   '/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdIndexRoute
+  '/skills/$skillId': typeof AuthenticatedSkillsSkillIdIndexRoute
   '/api/files/$fileId': typeof ApiFilesFileIdIndexRoute
   '/api/sessions/$sessionId/files': typeof ApiSessionsSessionIdFilesIndexRoute
 }
@@ -141,11 +195,17 @@ export interface FileRoutesById {
   '/_authenticated/(home)/': typeof AuthenticatedhomeIndexRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/agents/': typeof AuthenticatedAgentsIndexRoute
+  '/_authenticated/connectors/': typeof AuthenticatedConnectorsIndexRoute
+  '/_authenticated/prompts/': typeof AuthenticatedPromptsIndexRoute
   '/_authenticated/sessions/': typeof AuthenticatedSessionsIndexRoute
+  '/_authenticated/skills/': typeof AuthenticatedSkillsIndexRoute
   '/api/chat/': typeof ApiChatIndexRoute
   '/_authenticated/agents/$agentId/': typeof AuthenticatedAgentsAgentIdIndexRoute
+  '/_authenticated/connectors/$connectorId/': typeof AuthenticatedConnectorsConnectorIdIndexRoute
   '/_authenticated/files/$fileId/': typeof AuthenticatedFilesFileIdIndexRoute
+  '/_authenticated/prompts/$promptId/': typeof AuthenticatedPromptsPromptIdIndexRoute
   '/_authenticated/sessions/$sessionId/': typeof AuthenticatedSessionsSessionIdIndexRoute
+  '/_authenticated/skills/$skillId/': typeof AuthenticatedSkillsSkillIdIndexRoute
   '/api/files/$fileId/': typeof ApiFilesFileIdIndexRoute
   '/api/sessions/$sessionId/files/': typeof ApiSessionsSessionIdFilesIndexRoute
 }
@@ -158,11 +218,17 @@ export interface FileRouteTypes {
     | '/sessions/new'
     | '/admin/'
     | '/agents/'
+    | '/connectors/'
+    | '/prompts/'
     | '/sessions/'
+    | '/skills/'
     | '/api/chat/'
     | '/agents/$agentId/'
+    | '/connectors/$connectorId/'
     | '/files/$fileId/'
+    | '/prompts/$promptId/'
     | '/sessions/$sessionId/'
+    | '/skills/$skillId/'
     | '/api/files/$fileId/'
     | '/api/sessions/$sessionId/files/'
   fileRoutesByTo: FileRoutesByTo
@@ -172,11 +238,17 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/agents'
+    | '/connectors'
+    | '/prompts'
     | '/sessions'
+    | '/skills'
     | '/api/chat'
     | '/agents/$agentId'
+    | '/connectors/$connectorId'
     | '/files/$fileId'
+    | '/prompts/$promptId'
     | '/sessions/$sessionId'
+    | '/skills/$skillId'
     | '/api/files/$fileId'
     | '/api/sessions/$sessionId/files'
   id:
@@ -188,11 +260,17 @@ export interface FileRouteTypes {
     | '/_authenticated/(home)/'
     | '/_authenticated/admin/'
     | '/_authenticated/agents/'
+    | '/_authenticated/connectors/'
+    | '/_authenticated/prompts/'
     | '/_authenticated/sessions/'
+    | '/_authenticated/skills/'
     | '/api/chat/'
     | '/_authenticated/agents/$agentId/'
+    | '/_authenticated/connectors/$connectorId/'
     | '/_authenticated/files/$fileId/'
+    | '/_authenticated/prompts/$promptId/'
     | '/_authenticated/sessions/$sessionId/'
+    | '/_authenticated/skills/$skillId/'
     | '/api/files/$fileId/'
     | '/api/sessions/$sessionId/files/'
   fileRoutesById: FileRoutesById
@@ -241,6 +319,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAgentsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/connectors/': {
+      id: '/_authenticated/connectors/'
+      path: '/connectors'
+      fullPath: '/connectors/'
+      preLoaderRoute: typeof AuthenticatedConnectorsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prompts/': {
+      id: '/_authenticated/prompts/'
+      path: '/prompts'
+      fullPath: '/prompts/'
+      preLoaderRoute: typeof AuthenticatedPromptsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/sessions/': {
       id: '/_authenticated/sessions/'
       path: '/'
@@ -262,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSessionsNewRouteImport
       parentRoute: typeof AuthenticatedSessionsRouteRoute
     }
+    '/_authenticated/skills/': {
+      id: '/_authenticated/skills/'
+      path: '/skills'
+      fullPath: '/skills/'
+      preLoaderRoute: typeof AuthenticatedSkillsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/chat/': {
       id: '/api/chat/'
       path: '/api/chat'
@@ -276,11 +375,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAgentsAgentIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/connectors/$connectorId/': {
+      id: '/_authenticated/connectors/$connectorId/'
+      path: '/connectors/$connectorId'
+      fullPath: '/connectors/$connectorId/'
+      preLoaderRoute: typeof AuthenticatedConnectorsConnectorIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/files/$fileId/': {
       id: '/_authenticated/files/$fileId/'
       path: '/files/$fileId'
       fullPath: '/files/$fileId/'
       preLoaderRoute: typeof AuthenticatedFilesFileIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prompts/$promptId/': {
+      id: '/_authenticated/prompts/$promptId/'
+      path: '/prompts/$promptId'
+      fullPath: '/prompts/$promptId/'
+      preLoaderRoute: typeof AuthenticatedPromptsPromptIdIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/sessions/$sessionId/': {
@@ -289,6 +402,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/sessions/$sessionId/'
       preLoaderRoute: typeof AuthenticatedSessionsSessionIdIndexRouteImport
       parentRoute: typeof AuthenticatedSessionsRouteRoute
+    }
+    '/_authenticated/skills/$skillId/': {
+      id: '/_authenticated/skills/$skillId/'
+      path: '/skills/$skillId'
+      fullPath: '/skills/$skillId/'
+      preLoaderRoute: typeof AuthenticatedSkillsSkillIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/files/$fileId/': {
       id: '/api/files/$fileId/'
@@ -333,8 +453,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedhomeIndexRoute: typeof AuthenticatedhomeIndexRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAgentsIndexRoute: typeof AuthenticatedAgentsIndexRoute
+  AuthenticatedConnectorsIndexRoute: typeof AuthenticatedConnectorsIndexRoute
+  AuthenticatedPromptsIndexRoute: typeof AuthenticatedPromptsIndexRoute
+  AuthenticatedSkillsIndexRoute: typeof AuthenticatedSkillsIndexRoute
   AuthenticatedAgentsAgentIdIndexRoute: typeof AuthenticatedAgentsAgentIdIndexRoute
+  AuthenticatedConnectorsConnectorIdIndexRoute: typeof AuthenticatedConnectorsConnectorIdIndexRoute
   AuthenticatedFilesFileIdIndexRoute: typeof AuthenticatedFilesFileIdIndexRoute
+  AuthenticatedPromptsPromptIdIndexRoute: typeof AuthenticatedPromptsPromptIdIndexRoute
+  AuthenticatedSkillsSkillIdIndexRoute: typeof AuthenticatedSkillsSkillIdIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -342,8 +468,16 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedhomeIndexRoute: AuthenticatedhomeIndexRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAgentsIndexRoute: AuthenticatedAgentsIndexRoute,
+  AuthenticatedConnectorsIndexRoute: AuthenticatedConnectorsIndexRoute,
+  AuthenticatedPromptsIndexRoute: AuthenticatedPromptsIndexRoute,
+  AuthenticatedSkillsIndexRoute: AuthenticatedSkillsIndexRoute,
   AuthenticatedAgentsAgentIdIndexRoute: AuthenticatedAgentsAgentIdIndexRoute,
+  AuthenticatedConnectorsConnectorIdIndexRoute:
+    AuthenticatedConnectorsConnectorIdIndexRoute,
   AuthenticatedFilesFileIdIndexRoute: AuthenticatedFilesFileIdIndexRoute,
+  AuthenticatedPromptsPromptIdIndexRoute:
+    AuthenticatedPromptsPromptIdIndexRoute,
+  AuthenticatedSkillsSkillIdIndexRoute: AuthenticatedSkillsSkillIdIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
