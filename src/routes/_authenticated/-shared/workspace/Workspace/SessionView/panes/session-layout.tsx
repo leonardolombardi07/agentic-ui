@@ -21,6 +21,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useWorkspaceCommands } from "../../../commands";
 import {
 	defaultPanesSize,
 	PANES_PER_COLUMN,
@@ -28,7 +29,7 @@ import {
 	type Panes,
 	type TabRef,
 } from "../../../model";
-import { workspace } from "../../../store";
+import { useWorkspace, workspace } from "../../../store";
 import { DEFAULT_PANE, getPane, PANE_LIST, type PaneProps } from "./registry";
 import {
 	CHAT_MIN_WIDTH,
@@ -43,8 +44,13 @@ type SessionLayoutProps = {
 	paneProps: PaneProps;
 	/** Left side of the session header. */
 	breadcrumb: ReactNode;
-	/** The chat: transcript and composer. */
-	children: ReactNode;
+	/** The chat: transcript and composer. Gets what it needs to open things in the panes. */
+	children: (layout: LayoutActions) => ReactNode;
+};
+
+export type LayoutActions = {
+	/** Shows a file in the Files pane: docked, or as the sheet when narrow. */
+	openFile: (fileId: string) => void;
 };
 
 /**
@@ -70,6 +76,10 @@ export function SessionLayout({
 	const mode = layout?.mode ?? null;
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [expanded, setExpanded] = useState<PaneId | null>(null);
+	const commands = useWorkspaceCommands();
+	const isMaximized = useWorkspace(
+		(ws) => ws.maximizedGroupId === tabRef.groupId,
+	);
 
 	// The sheet is a request made while narrow: it doesn't carry over a dock and back.
 	useEffect(() => {
@@ -126,6 +136,11 @@ export function SessionLayout({
 		setSheetOpen(true);
 	}
 
+	function openFile(fileId: string) {
+		workspace.selectFile(tabRef, fileId);
+		if (mode === "sheet") setSheetOpen(true);
+	}
+
 	function closePane(id: PaneId) {
 		workspace.closePane(tabRef, id);
 		if (expanded === id) setExpanded(null);
@@ -152,13 +167,19 @@ export function SessionLayout({
 					) : null}
 				</header>
 				<div className="relative flex min-h-0 flex-1 flex-col">
-					{children}
+					{children({ openFile })}
 					{sheetPane ? (
 						<PaneSheet
 							pane={sheetPane}
 							paneProps={paneProps}
 							onHide={() => setSheetOpen(false)}
 							onClose={() => closePane(sheetPane)}
+							// The way out of "too narrow": give this session the whole main area.
+							onFocusMode={
+								isMaximized
+									? undefined
+									: () => commands.toggleMaximized(tabRef.groupId)
+							}
 						/>
 					) : null}
 				</div>
@@ -435,11 +456,14 @@ function PaneSheet({
 	paneProps,
 	onHide,
 	onClose,
+	onFocusMode,
 }: {
 	pane: PaneId;
 	paneProps: PaneProps;
 	onHide: () => void;
 	onClose: () => void;
+	/** Absent when already in focus mode. */
+	onFocusMode?: () => void;
 }) {
 	const def = getPane(pane);
 	return (
@@ -459,13 +483,25 @@ function PaneSheet({
 					</IconAction>
 				}
 				actions={
-					<IconAction
-						label={`Close ${def.label}`}
-						onClick={onClose}
-						testId={`pane-close-${pane}`}
-					>
-						<XIcon />
-					</IconAction>
+					<>
+						{onFocusMode ? (
+							<IconAction
+								label="Focus mode"
+								tooltip="Focus mode: room to show panes beside the chat"
+								onClick={onFocusMode}
+								testId="sheet-focus-mode"
+							>
+								<Maximize2Icon />
+							</IconAction>
+						) : null}
+						<IconAction
+							label={`Close ${def.label}`}
+							onClick={onClose}
+							testId={`pane-close-${pane}`}
+						>
+							<XIcon />
+						</IconAction>
+					</>
 				}
 			/>
 			<div className="min-h-0 flex-1 overflow-y-auto">

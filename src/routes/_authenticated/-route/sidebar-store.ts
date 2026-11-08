@@ -44,6 +44,12 @@ export const sidebar = {
 				: { ...s, view, open: true },
 		);
 	},
+	/** Open `view`, whatever is showing now. */
+	showView(view: SidebarView) {
+		store.setState((s) =>
+			s.open && s.view === view ? s : { ...s, view, open: true },
+		);
+	},
 	getWidth() {
 		return store.getState().width;
 	},

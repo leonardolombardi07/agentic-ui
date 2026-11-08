@@ -1,12 +1,14 @@
 import { fetchServerSentEvents, useChat } from "@tanstack/ai-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { uploadFilesMutationOptions } from "@/lib/api/files/queries";
 import {
 	createSessionFromDraftMutationOptions,
 	sessionQueryOptions,
 	sessionsListQueryOptions,
 } from "@/lib/api/sessions/queries";
 import type { ClientSession } from "@/lib/api/types/session";
+import { attachmentsPart } from "./attachments";
 
 /** The chat endpoint (`routes/api/chat`). The session id is the `threadId`. */
 const CHAT_URL = "/api/chat";
@@ -20,6 +22,7 @@ const CHAT_URL = "/api/chat";
 export function useSessionChat(session: ClientSession) {
 	const queryClient = useQueryClient();
 	const createFromDraft = useMutation(createSessionFromDraftMutationOptions());
+	const upload = useMutation(uploadFilesMutationOptions());
 
 	/*
 	 * The server's reason for refusing a request (a missing API key, an agent that
@@ -69,17 +72,36 @@ export function useSessionChat(session: ClientSession) {
 		});
 	}, [status, queryClient, session.id]);
 
-	async function send(text: string) {
+	/**
+	 * Sends a turn. Files are uploaded first, tied to the message id chosen here, then
+	 * announced to the model in the same message (see attachments.ts).
+	 */
+	async function send(text: string, files: File[] = []) {
 		if (session.isDraft) {
 			await createFromDraft.mutateAsync({
 				sessionId: session.id,
-				firstMessage: text,
+				// Titles the session; a files-only first message is titled by its files.
+				firstMessage: text.trim() || files.map((f) => f.name).join(", "),
 			});
 		}
-		await chat.sendMessage(text);
+		if (files.length === 0) {
+			await chat.sendMessage(text);
+			return;
+		}
+		const messageId = crypto.randomUUID();
+		const uploaded = await upload.mutateAsync({
+			sessionId: session.id,
+			messageId,
+			files,
+		});
+		const content = [
+			...(text.trim() ? [{ type: "text" as const, content: text }] : []),
+			await attachmentsPart(uploaded, files),
+		];
+		await chat.sendMessage({ id: messageId, content });
 	}
 
-	const error = createFromDraft.error ?? chat.error;
+	const error = createFromDraft.error ?? upload.error ?? chat.error;
 
 	return {
 		messages: chat.messages,
@@ -87,7 +109,7 @@ export function useSessionChat(session: ClientSession) {
 		stop: chat.stop,
 		/** Resends the last message, e.g. after an error. */
 		retry: chat.reload,
-		isRunning: chat.isLoading || createFromDraft.isPending,
+		isRunning: chat.isLoading || createFromDraft.isPending || upload.isPending,
 		isHydrating: chat.isHydrating,
 		/** Why the last send failed, in words: the server's reason when there is one. */
 		errorMessage: error

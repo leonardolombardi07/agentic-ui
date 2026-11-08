@@ -43,6 +43,9 @@ export const workspace = {
 	focusGroup(groupId: string) {
 		store.setState((ws) => M.focusGroup(ws, groupId));
 	},
+	toggleMaximized(groupId: string) {
+		store.setState((ws) => M.toggleMaximized(ws, groupId));
+	},
 	setSplitRatio(ratio: number) {
 		store.setState((ws) => M.setSplitRatio(ws, ratio));
 	},
@@ -61,6 +64,9 @@ export const workspace = {
 	},
 	touchPane(ref: M.TabRef, id: M.PaneId) {
 		store.setState((ws) => M.touchPane(ws, ref, id));
+	},
+	selectFile(ref: M.TabRef, fileId: string | null) {
+		store.setState((ws) => M.selectFile(ws, ref, fileId));
 	},
 	setPanesSize(ref: M.TabRef, size: number) {
 		store.setState((ws) => M.setPanesSize(ws, ref, size));

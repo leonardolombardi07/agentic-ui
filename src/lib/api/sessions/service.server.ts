@@ -1,5 +1,6 @@
 import type { InterruptRecord } from "@tanstack/ai-persistence";
 import { z } from "zod";
+import { filesTable } from "@/lib/api/files/store.server";
 import { persistence } from "@/lib/api/persistence.server";
 import type {
 	CreateSessionInput,
@@ -96,6 +97,7 @@ export async function deleteSession(
 	if (!record) return false;
 	await sessionsTable.delete(sessionId);
 	await runMetasTable.deleteForSession(sessionId);
+	await filesTable.deleteForSession(sessionId);
 	/*
 	 * TanStack AI's store contracts have no delete: clearing the transcript is all
 	 * they allow. Runs and interrupts stay behind, unreachable because every read

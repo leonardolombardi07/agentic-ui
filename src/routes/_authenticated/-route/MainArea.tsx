@@ -1,6 +1,7 @@
-import { ClientOnly, Outlet, useMatches } from "@tanstack/react-router";
+import { ClientOnly, Outlet } from "@tanstack/react-router";
 import { Activity } from "react";
 import { Workspace } from "../-shared/workspace/Workspace";
+import { useMainMode } from "./use-main-mode";
 
 /*
  * The workspace is rendered here, not by the `sessions` route, so it stays mounted on
@@ -8,15 +9,7 @@ import { Workspace } from "../-shared/workspace/Workspace";
  * keep running may live in its effects: <Activity> runs effect cleanups while hidden.
  */
 export function MainArea() {
-	const mode = useMatches({
-		select: (matches) => {
-			if (matches.some((m) => m.status === "notFound" || m.status === "error"))
-				return "page";
-			return matches.some((m) => m.staticData.main === "workspace")
-				? "workspace"
-				: "page";
-		},
-	});
+	const mode = useMainMode();
 
 	return (
 		<main className="relative min-w-0 flex-1">

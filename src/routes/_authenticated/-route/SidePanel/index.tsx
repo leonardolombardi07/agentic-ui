@@ -1,6 +1,7 @@
 import { Suspense, useRef } from "react";
 import { ResizeHandle } from "@/components/ui/resize-handle";
 import { SIDEBAR_WIDTH, sidebar, useSidebar } from "../sidebar-store";
+import { useIsFocusMode } from "../use-main-mode";
 import { AgentsView } from "./AgentsView";
 import { SessionsView } from "./SessionsView";
 
@@ -10,8 +11,10 @@ export function SidePanel() {
 	const view = useSidebar((s) => s.view);
 	const width = useSidebar((s) => s.width);
 	const widthAtDragStart = useRef(width);
+	// Hidden, not closed: leaving focus mode brings it back as it was.
+	const isFocusMode = useIsFocusMode();
 
-	if (!open) return null;
+	if (!open || isFocusMode) return null;
 
 	return (
 		<aside

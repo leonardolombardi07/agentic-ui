@@ -103,6 +103,13 @@ export function useWorkspaceCommands() {
 			workspace.focusGroup(groupId);
 			void syncUrl({ replace: true });
 		},
+		/** Focus mode on or off. Entering it on another group moves focus there, so the URL follows. */
+		toggleMaximized(groupId: string) {
+			const before = workspace.getState().activeGroupId;
+			workspace.toggleMaximized(groupId);
+			if (workspace.getState().activeGroupId !== before)
+				void syncUrl({ replace: true });
+		},
 		closeTab(ref: TabRef) {
 			const before = getActiveTabRef(workspace.getState())?.tabId;
 			workspace.closeTab(ref);

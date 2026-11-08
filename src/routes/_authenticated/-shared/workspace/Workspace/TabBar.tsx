@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "cn";
-import { Columns2Icon, PlusIcon, XIcon } from "lucide-react";
+import {
+	Columns2Icon,
+	Maximize2Icon,
+	Minimize2Icon,
+	PlusIcon,
+	XIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +20,7 @@ import { AgentAvatar } from "../../agent-avatar";
 import { AgentIndicator } from "../../agent-indicator";
 import { useWorkspaceCommands } from "../commands";
 import type { AgentTab, EditorGroup, SessionTab, Tab } from "../model";
+import { useWorkspace } from "../store";
 
 export function TabBar({
 	group,
@@ -24,6 +31,8 @@ export function TabBar({
 }) {
 	const commands = useWorkspaceCommands();
 	const canSplit = group.activeTabId !== null;
+	const isMaximized = useWorkspace((ws) => ws.maximizedGroupId === group.id);
+	const focusLabel = isMaximized ? "Exit focus mode" : "Focus mode";
 
 	return (
 		<div className="flex h-10 shrink-0 items-stretch border-b border-border bg-sidebar">
@@ -45,6 +54,8 @@ export function TabBar({
 						isActiveGroup,
 						onSelect: () =>
 							commands.focusTab({ groupId: group.id, tabId: tab.id }),
+						// Double-click maximizes, as in VSCode.
+						onToggleFocus: () => commands.toggleMaximized(group.id),
 						onClose: () =>
 							commands.closeTab({ groupId: group.id, tabId: tab.id }),
 					};
@@ -79,7 +90,26 @@ export function TabBar({
 					<TooltipContent>New session</TooltipContent>
 				</Tooltip>
 			</div>
-			<div className="flex shrink-0 items-center px-1">
+			<div className="flex shrink-0 items-center gap-0.5 px-1">
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								variant="ghost"
+								size="icon-sm"
+								aria-label="Focus mode"
+								aria-pressed={isMaximized}
+								aria-keyshortcuts="Control+Period Meta+Period"
+								disabled={!canSplit}
+								onClick={() => commands.toggleMaximized(group.id)}
+								data-testid="focus-mode"
+							/>
+						}
+					>
+						{isMaximized ? <Minimize2Icon /> : <Maximize2Icon />}
+					</TooltipTrigger>
+					<TooltipContent>{focusLabel} (Ctrl+.)</TooltipContent>
+				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger
 						render={
@@ -106,6 +136,7 @@ type TabItemProps = {
 	isActive: boolean;
 	isActiveGroup: boolean;
 	onSelect: () => void;
+	onToggleFocus: () => void;
 	onClose: () => void;
 };
 
@@ -149,6 +180,7 @@ function TabItem({
 	isActive,
 	isActiveGroup,
 	onSelect,
+	onToggleFocus,
 	onClose,
 }: TabItemProps & {
 	kind: Tab["kind"];
@@ -174,6 +206,7 @@ function TabItem({
 				aria-selected={isActive}
 				className="flex min-w-0 flex-1 items-center gap-1.5 py-2 outline-none"
 				onClick={onSelect}
+				onDoubleClick={onToggleFocus}
 				onAuxClick={(event) => {
 					if (event.button === 1) onClose(); // middle-click closes, as in VSCode
 				}}

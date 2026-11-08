@@ -35,6 +35,8 @@ export const PanesSchema = z.object({
 	recent: z.array(PaneIdSchema),
 	/** Share of the group's width when docked. */
 	size: z.number(),
+	/** The file the Files pane previews; null shows the list. */
+	selectedFileId: z.string().nullable().default(null),
 });
 
 const DEFAULT_PANES: Panes = {
@@ -42,6 +44,7 @@ const DEFAULT_PANES: Panes = {
 	views: [],
 	recent: [],
 	size: PANES_SIZE_BY_COLUMNS[0],
+	selectedFileId: null,
 };
 
 export const SessionTabSchema = TabBaseSchema.extend({
@@ -81,6 +84,11 @@ export const WorkspaceSchema = z.object({
 	activeGroupId: z.string(),
 	/** Width of the first group as a fraction of the workspace, when split. */
 	splitRatio: z.number().default(SPLIT_RATIO.default),
+	/**
+	 * Focus mode: this group takes the whole main area (the other group and the side
+	 * panel hide), so its session has room for docked panes. Always the active group.
+	 */
+	maximizedGroupId: z.string().nullable().default(null),
 });
 
 export type PaneId = z.infer<typeof PaneIdSchema>;
@@ -114,6 +122,7 @@ export function emptyWorkspace(): Workspace {
 		groups: [{ id: "main", tabs: [], activeTabId: null }],
 		activeGroupId: "main",
 		splitRatio: SPLIT_RATIO.default,
+		maximizedGroupId: null,
 	};
 }
 
@@ -212,6 +221,7 @@ export function focusTab(ws: Workspace, { groupId, tabId }: TabRef): Workspace {
 	return {
 		...mapGroup(ws, groupId, (g) => ({ ...g, activeTabId: tabId })),
 		activeGroupId: groupId,
+		maximizedGroupId: followFocus(ws, groupId),
 	};
 }
 
@@ -254,12 +264,13 @@ export function openToSide(
 ): Workspace {
 	let side = getSideGroup(ws);
 	if (!hasRoomFor(side, target)) return ws;
-	let next = ws;
+	// Opening to the side means wanting both groups on screen: leave focus mode.
+	let next: Workspace = { ...ws, maximizedGroupId: null };
 	if (!side) {
 		side = { id: uid(), tabs: [], activeTabId: null };
 		// A new split starts even, like VSCode.
 		next = {
-			...ws,
+			...next,
 			groups: [...ws.groups, side],
 			splitRatio: SPLIT_RATIO.default,
 		};
@@ -286,7 +297,13 @@ export function closeTab(ws: Workspace, { groupId, tabId }: TabRef): Workspace {
 
 	if (tabs.length === 0 && ws.groups.length === 2) {
 		const remaining = ws.groups.filter((g) => g.id !== groupId);
-		return { ...ws, groups: remaining, activeGroupId: remaining[0].id };
+		return {
+			...ws,
+			groups: remaining,
+			activeGroupId: remaining[0].id,
+			maximizedGroupId:
+				ws.maximizedGroupId === groupId ? null : ws.maximizedGroupId,
+		};
 	}
 	// Neighbour for now; MRU order later.
 	const activeTabId =
@@ -299,7 +316,26 @@ export function closeTab(ws: Workspace, { groupId, tabId }: TabRef): Workspace {
 export function focusGroup(ws: Workspace, groupId: string): Workspace {
 	if (ws.activeGroupId === groupId || !ws.groups.some((g) => g.id === groupId))
 		return ws;
-	return { ...ws, activeGroupId: groupId };
+	return {
+		...ws,
+		activeGroupId: groupId,
+		maximizedGroupId: followFocus(ws, groupId),
+	};
+}
+
+/**
+ * Focus mode follows focus: a hidden group can't be the active one, so focusing it
+ * (e.g. Back to a tab in it) maximizes it instead.
+ */
+function followFocus(ws: Workspace, groupId: string): string | null {
+	return ws.maximizedGroupId === null ? null : groupId;
+}
+
+/** Enters focus mode on `groupId` (making it active), or leaves it. */
+export function toggleMaximized(ws: Workspace, groupId: string): Workspace {
+	if (!ws.groups.some((g) => g.id === groupId)) return ws;
+	if (ws.maximizedGroupId === groupId) return { ...ws, maximizedGroupId: null };
+	return { ...ws, activeGroupId: groupId, maximizedGroupId: groupId };
 }
 
 export function updateTab(
@@ -371,7 +407,7 @@ export function openPane(ws: Workspace, ref: TabRef, id: PaneId): Workspace {
 			columns > paneColumnCount(p.views.length)
 				? Math.max(p.size, defaultPanesSize(columns))
 				: p.size;
-		return withPanes(tab, { open: true, views, recent, size });
+		return withPanes(tab, { ...p, open: true, views, recent, size });
 	});
 }
 
@@ -388,6 +424,7 @@ export function closePane(ws: Workspace, ref: TabRef, id: PaneId): Workspace {
 				? Math.min(p.size, defaultPanesSize(columns))
 				: p.size;
 		return withPanes(tab, {
+			...p,
 			open: views.length > 0 && p.open,
 			views,
 			recent: p.recent.filter((v) => v !== id),
@@ -440,4 +477,18 @@ function findSessionTab(ws: Workspace, ref: TabRef): SessionTab | undefined {
 		.find((g) => g.id === ref.groupId)
 		?.tabs.find((t) => t.id === ref.tabId);
 	return tab?.kind === "session" ? tab : undefined;
+}
+
+/** Shows `fileId` in the Files pane, opening the pane if needed. Null goes back to the list. */
+export function selectFile(
+	ws: Workspace,
+	ref: TabRef,
+	fileId: string | null,
+): Workspace {
+	const next = fileId === null ? ws : openPane(ws, ref, "files");
+	return mapSessionTab(next, ref, (tab) =>
+		tab.panes.selectedFileId === fileId
+			? tab
+			: withPanes(tab, { ...tab.panes, selectedFileId: fileId }),
+	);
 }

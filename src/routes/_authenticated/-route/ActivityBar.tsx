@@ -23,8 +23,10 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { sessionsListQueryOptions } from "@/lib/api/sessions/queries";
+import { workspace } from "../-shared/workspace/store";
 import { SearchDialog } from "./SearchDialog";
 import { type SidebarView, sidebar, useSidebar } from "./sidebar-store";
+import { useIsFocusMode } from "./use-main-mode";
 
 const itemClassName =
 	"relative flex size-10 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-120 outline-none hover:bg-accent hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring [&_svg]:size-5";
@@ -96,7 +98,8 @@ function ViewItem({
 	label: string;
 	icon: LucideIcon;
 }) {
-	const isActive = useSidebar((s) => s.open && s.view === view);
+	const isFocusMode = useIsFocusMode();
+	const isActive = useSidebar((s) => s.open && s.view === view) && !isFocusMode;
 	return (
 		<Tooltip>
 			<TooltipTrigger
@@ -106,7 +109,17 @@ function ViewItem({
 						aria-label={label}
 						aria-pressed={isActive}
 						className={cn(itemClassName, isActive && activeClassName)}
-						onClick={() => sidebar.toggleView(view)}
+						onClick={() => {
+							// Asking for the side panel means wanting it on screen: leave focus mode.
+							if (isFocusMode) {
+								const { maximizedGroupId } = workspace.getState();
+								if (maximizedGroupId)
+									workspace.toggleMaximized(maximizedGroupId);
+								sidebar.showView(view);
+								return;
+							}
+							sidebar.toggleView(view);
+						}}
 						data-testid={`activity-${view}`}
 					/>
 				}

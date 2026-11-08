@@ -20,6 +20,8 @@ import { Route as AuthenticatedSessionsNewRouteImport } from './routes/_authenti
 import { Route as ApiChatIndexRouteImport } from './routes/api/chat/index'
 import { Route as AuthenticatedAgentsAgentIdIndexRouteImport } from './routes/_authenticated/agents/$agentId/index'
 import { Route as AuthenticatedSessionsSessionIdIndexRouteImport } from './routes/_authenticated/sessions/$sessionId/index'
+import { Route as ApiFilesFileIdIndexRouteImport } from './routes/api/files/$fileId/index'
+import { Route as ApiSessionsSessionIdFilesIndexRouteImport } from './routes/api/sessions/$sessionId/files/index'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -82,6 +84,17 @@ const AuthenticatedSessionsSessionIdIndexRoute =
     path: '/$sessionId/',
     getParentRoute: () => AuthenticatedSessionsRouteRoute,
   } as any)
+const ApiFilesFileIdIndexRoute = ApiFilesFileIdIndexRouteImport.update({
+  id: '/api/files/$fileId/',
+  path: '/api/files/$fileId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSessionsSessionIdFilesIndexRoute =
+  ApiSessionsSessionIdFilesIndexRouteImport.update({
+    id: '/api/sessions/$sessionId/files/',
+    path: '/api/sessions/$sessionId/files/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedhomeIndexRoute
@@ -94,6 +107,8 @@ export interface FileRoutesByFullPath {
   '/api/chat/': typeof ApiChatIndexRoute
   '/agents/$agentId/': typeof AuthenticatedAgentsAgentIdIndexRoute
   '/sessions/$sessionId/': typeof AuthenticatedSessionsSessionIdIndexRoute
+  '/api/files/$fileId/': typeof ApiFilesFileIdIndexRoute
+  '/api/sessions/$sessionId/files/': typeof ApiSessionsSessionIdFilesIndexRoute
 }
 export interface FileRoutesByTo {
   '/sessions/all': typeof AuthenticatedSessionsAllRoute
@@ -105,6 +120,8 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatIndexRoute
   '/agents/$agentId': typeof AuthenticatedAgentsAgentIdIndexRoute
   '/sessions/$sessionId': typeof AuthenticatedSessionsSessionIdIndexRoute
+  '/api/files/$fileId': typeof ApiFilesFileIdIndexRoute
+  '/api/sessions/$sessionId/files': typeof ApiSessionsSessionIdFilesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -119,6 +136,8 @@ export interface FileRoutesById {
   '/api/chat/': typeof ApiChatIndexRoute
   '/_authenticated/agents/$agentId/': typeof AuthenticatedAgentsAgentIdIndexRoute
   '/_authenticated/sessions/$sessionId/': typeof AuthenticatedSessionsSessionIdIndexRoute
+  '/api/files/$fileId/': typeof ApiFilesFileIdIndexRoute
+  '/api/sessions/$sessionId/files/': typeof ApiSessionsSessionIdFilesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -133,6 +152,8 @@ export interface FileRouteTypes {
     | '/api/chat/'
     | '/agents/$agentId/'
     | '/sessions/$sessionId/'
+    | '/api/files/$fileId/'
+    | '/api/sessions/$sessionId/files/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/sessions/all'
@@ -144,6 +165,8 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/agents/$agentId'
     | '/sessions/$sessionId'
+    | '/api/files/$fileId'
+    | '/api/sessions/$sessionId/files'
   id:
     | '__root__'
     | '/_authenticated'
@@ -157,11 +180,15 @@ export interface FileRouteTypes {
     | '/api/chat/'
     | '/_authenticated/agents/$agentId/'
     | '/_authenticated/sessions/$sessionId/'
+    | '/api/files/$fileId/'
+    | '/api/sessions/$sessionId/files/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ApiChatIndexRoute: typeof ApiChatIndexRoute
+  ApiFilesFileIdIndexRoute: typeof ApiFilesFileIdIndexRoute
+  ApiSessionsSessionIdFilesIndexRoute: typeof ApiSessionsSessionIdFilesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -243,6 +270,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSessionsSessionIdIndexRouteImport
       parentRoute: typeof AuthenticatedSessionsRouteRoute
     }
+    '/api/files/$fileId/': {
+      id: '/api/files/$fileId/'
+      path: '/api/files/$fileId'
+      fullPath: '/api/files/$fileId/'
+      preLoaderRoute: typeof ApiFilesFileIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sessions/$sessionId/files/': {
+      id: '/api/sessions/$sessionId/files/'
+      path: '/api/sessions/$sessionId/files'
+      fullPath: '/api/sessions/$sessionId/files/'
+      preLoaderRoute: typeof ApiSessionsSessionIdFilesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -289,6 +330,8 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ApiChatIndexRoute: ApiChatIndexRoute,
+  ApiFilesFileIdIndexRoute: ApiFilesFileIdIndexRoute,
+  ApiSessionsSessionIdFilesIndexRoute: ApiSessionsSessionIdFilesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

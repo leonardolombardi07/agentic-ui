@@ -8,16 +8,19 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ClientSession } from "@/lib/api/types/session";
-import { type PaneId, PaneIdSchema } from "../../../model";
+import { type PaneId, PaneIdSchema, type TabRef } from "../../../model";
 import { ActivityPane } from "./activity-pane";
 import { AgentPane } from "./agent-pane";
 import { ContextPane } from "./context-pane";
 import { FilesPane } from "./files-pane";
 
-/** What every pane gets: the session and its live transcript. */
+/** What every pane gets: the session, its live transcript and the tab it's in. */
 export type PaneProps = {
 	session: ClientSession;
 	messages: ReadonlyArray<UIMessage>;
+	tabRef: TabRef;
+	/** The Files pane's selection (tab state). */
+	selectedFileId: string | null;
 };
 
 export type PaneDef = {

@@ -4,6 +4,7 @@ import { ChevronRightIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { agentQueryOptions } from "@/lib/api/agents/queries";
+import { sessionFilesQueryOptions } from "@/lib/api/files/queries";
 import {
 	sessionQueryOptions,
 	updateSessionMutationOptions,
@@ -69,6 +70,11 @@ function SessionChat({
 }) {
 	const chat = useSessionChat(session);
 	const update = useMutation(updateSessionMutationOptions());
+	const { data: files = [] } = useQuery({
+		...sessionFilesQueryOptions(session.id),
+		// A draft isn't on the server yet, so it has no files.
+		enabled: !session.isDraft,
+	});
 
 	// A session started from Home or an agent page arrives with its first message.
 	const sentFirst = useRef(false);
@@ -81,14 +87,19 @@ function SessionChat({
 	}, [chat.send, session.id]);
 
 	function handleSend(message: ComposerMessage) {
-		void chat.send(message.text);
+		void chat.send(message.text, message.files);
 	}
 
 	return (
 		<SessionLayout
 			tabRef={{ groupId, tabId: tab.id }}
 			panes={tab.panes}
-			paneProps={{ session, messages: chat.messages }}
+			paneProps={{
+				session,
+				messages: chat.messages,
+				tabRef: { groupId, tabId: tab.id },
+				selectedFileId: tab.panes.selectedFileId,
+			}}
 			breadcrumb={
 				<nav
 					aria-label="Breadcrumb"
@@ -104,65 +115,76 @@ function SessionChat({
 				</nav>
 			}
 		>
-			<Messages
-				messages={chat.messages}
-				isRunning={chat.isRunning}
-				emptyState={
-					chat.isHydrating ? (
-						<p className="text-sm text-muted-foreground">Loading messages...</p>
-					) : (
-						<p
-							className="py-12 text-center text-sm text-muted-foreground"
-							data-testid="messages-empty"
-						>
-							Send a message to start.
-						</p>
-					)
-				}
-				footer={
-					chat.errorMessage ? (
-						<div
-							role="alert"
-							className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm"
-							data-testid="chat-error"
-						>
-							<span className="min-w-0 flex-1 text-destructive-foreground">
-								{chat.errorMessage}
-							</span>
-							{chat.messages.length > 0 ? (
-								<Button
-									variant="secondary"
-									size="sm"
-									onClick={() => void chat.retry()}
-									data-testid="chat-retry"
+			{(layout) => (
+				<>
+					<Messages
+						messages={chat.messages}
+						files={files}
+						onOpenFile={layout.openFile}
+						isRunning={chat.isRunning}
+						emptyState={
+							chat.isHydrating ? (
+								<p className="text-sm text-muted-foreground">
+									Loading messages...
+								</p>
+							) : (
+								<p
+									className="py-12 text-center text-sm text-muted-foreground"
+									data-testid="messages-empty"
 								>
-									Retry
-								</Button>
-							) : null}
-						</div>
-					) : null
-				}
-			/>
-			<div className="mx-auto w-full max-w-3xl px-4 pb-4">
-				<Composer
-					draft={tab.composerDraft}
-					onDraftChange={(composerDraft) =>
-						workspace.updateTab({ groupId, tabId: tab.id }, { composerDraft })
-					}
-					defaultAgentId={session.leadAgentId}
-					defaultSettings={session.settings}
-					// Saved on the session; a running reply keeps its agent and model.
-					onAgentIdChange={(leadAgentId) =>
-						update.mutate({ sessionId: session.id, patch: { leadAgentId } })
-					}
-					onSettingsChange={(settings) =>
-						update.mutate({ sessionId: session.id, patch: { settings } })
-					}
-					onSend={handleSend}
-					isRunning={chat.isRunning}
-					onStop={chat.stop}
-				/>
-			</div>
+									Send a message to start.
+								</p>
+							)
+						}
+						footer={
+							chat.errorMessage ? (
+								<div
+									role="alert"
+									className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm"
+									data-testid="chat-error"
+								>
+									<span className="min-w-0 flex-1 text-destructive-foreground">
+										{chat.errorMessage}
+									</span>
+									{chat.messages.length > 0 ? (
+										<Button
+											variant="secondary"
+											size="sm"
+											onClick={() => void chat.retry()}
+											data-testid="chat-retry"
+										>
+											Retry
+										</Button>
+									) : null}
+								</div>
+							) : null
+						}
+					/>
+					<div className="mx-auto w-full max-w-3xl px-4 pb-4">
+						<Composer
+							draft={tab.composerDraft}
+							onDraftChange={(composerDraft) =>
+								workspace.updateTab(
+									{ groupId, tabId: tab.id },
+									{ composerDraft },
+								)
+							}
+							defaultAgentId={session.leadAgentId}
+							defaultSettings={session.settings}
+							// Saved on the session; a running reply keeps its agent and model.
+							onAgentIdChange={(leadAgentId) =>
+								update.mutate({ sessionId: session.id, patch: { leadAgentId } })
+							}
+							onSettingsChange={(settings) =>
+								update.mutate({ sessionId: session.id, patch: { settings } })
+							}
+							onSend={handleSend}
+							isRunning={chat.isRunning}
+							onStop={chat.stop}
+						/>
+					</div>
+				</>
+			)}
 		</SessionLayout>
 	);
 }

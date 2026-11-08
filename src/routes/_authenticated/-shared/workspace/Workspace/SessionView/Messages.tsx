@@ -2,6 +2,10 @@ import type { UIMessage } from "@tanstack/ai-react";
 import { cn } from "cn";
 import { ChevronRightIcon, WrenchIcon } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
+import type { SessionFile } from "@/lib/api/types/file";
+import { fileIcon, formatBytes } from "@/lib/file-preview";
+import { Markdown } from "@/lib/markdown";
+import { messageFiles, userVisibleText } from "./attachments";
 
 /** How close to the bottom still counts as "following" the reply, in px. */
 const STICK_THRESHOLD = 80;
@@ -14,6 +18,10 @@ type MessagesProps = {
 	emptyState: React.ReactNode;
 	/** Rendered under the last message, e.g. an error with a retry. */
 	footer?: React.ReactNode;
+	/** The session's files, to show what each user message attached. */
+	files: ReadonlyArray<SessionFile>;
+	/** Opens a file in the Files pane. */
+	onOpenFile: (fileId: string) => void;
 };
 
 /**
@@ -25,6 +33,8 @@ export function Messages({
 	isRunning,
 	emptyState,
 	footer,
+	files,
+	onOpenFile,
 }: MessagesProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const stickToBottom = useRef(true);
@@ -57,6 +67,8 @@ export function Messages({
 								key={message.id}
 								message={message}
 								isStreaming={isRunning && index === messages.length - 1}
+								files={files}
+								onOpenFile={onOpenFile}
 							/>
 						))}
 				{footer}
@@ -68,23 +80,39 @@ export function Messages({
 function Message({
 	message,
 	isStreaming,
+	files,
+	onOpenFile,
 }: {
 	message: UIMessage;
 	isStreaming: boolean;
+	files: ReadonlyArray<SessionFile>;
+	onOpenFile: (fileId: string) => void;
 }) {
 	if (message.role === "user") {
+		const attached = messageFiles(message, files);
+		const text = userVisibleText(message);
 		return (
 			<div
-				className="ml-auto max-w-[85%] rounded-2xl bg-muted px-4 py-2.5 text-sm whitespace-pre-wrap"
+				className="ml-auto flex max-w-[85%] flex-col items-end gap-1.5"
 				data-testid="message-user"
 			>
-				{message.parts.map((part, index) =>
-					part.type === "text" ? (
-						// Parts have no id; their order never changes.
-						// biome-ignore lint/suspicious/noArrayIndexKey: see above
-						<span key={index}>{part.content}</span>
-					) : null,
-				)}
+				{attached.length > 0 ? (
+					<ul
+						aria-label="Attached files"
+						className="flex flex-wrap justify-end gap-1.5"
+					>
+						{attached.map((file) => (
+							<li key={file.id}>
+								<FileChip file={file} onOpen={() => onOpenFile(file.id)} />
+							</li>
+						))}
+					</ul>
+				) : null}
+				{text ? (
+					<div className="rounded-2xl bg-muted px-4 py-2.5 text-sm whitespace-pre-wrap">
+						{text}
+					</div>
+				) : null}
 			</div>
 		);
 	}
@@ -103,9 +131,7 @@ function Message({
 					case "text":
 						return part.content ? (
 							// biome-ignore lint/suspicious/noArrayIndexKey: parts have no id and never reorder
-							<p key={index} className="whitespace-pre-wrap">
-								{part.content}
-							</p>
+							<Markdown key={index}>{part.content}</Markdown>
 						) : null;
 					case "thinking":
 						return (
@@ -140,6 +166,29 @@ function Message({
 				</p>
 			) : null}
 		</div>
+	);
+}
+
+/** A file the user attached; opens it in the Files pane. */
+function FileChip({ file, onOpen }: { file: SessionFile; onOpen: () => void }) {
+	const Icon = fileIcon(file);
+	return (
+		<button
+			type="button"
+			onClick={onOpen}
+			className="flex max-w-60 items-center gap-2 rounded-xl border border-border bg-background px-2.5 py-1.5 text-left text-xs outline-none transition-colors hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring"
+			data-testid="message-file"
+		>
+			<Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+			<span className="min-w-0">
+				<span className="block truncate font-medium" title={file.name}>
+					{file.name}
+				</span>
+				<span className="block text-muted-foreground">
+					{formatBytes(file.size)}
+				</span>
+			</span>
+		</button>
 	);
 }
 
