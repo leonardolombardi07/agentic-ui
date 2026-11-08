@@ -13,6 +13,7 @@ import {
 } from "react";
 import { useWorkspaceCommands } from "../../../commands";
 import type { PaneId, Panes, TabRef } from "../../../model";
+import { useLayoutSettings } from "../../../settings";
 import { useWorkspace, workspace } from "../../../store";
 import { DockedPanes, dockedLayout } from "./docked-panes";
 import { IconAction, PaneHeader } from "./pane-chrome";
@@ -56,6 +57,8 @@ export function SessionLayout({
 }: SessionLayoutProps) {
 	const rootRef = useRef<HTMLDivElement>(null);
 	const layout = usePanesLayout(rootRef);
+	// "Overlay" panes never dock, so focus mode wouldn't make room for them.
+	const panesDock = useLayoutSettings((s) => s.sessionPanes === "auto");
 	const mode = layout?.mode ?? null;
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const [expanded, setExpanded] = useState<PaneId | null>(null);
@@ -157,7 +160,7 @@ export function SessionLayout({
 							onClose={() => closePane(sheetPane)}
 							// The way out of "too narrow": give this session the whole main area.
 							onFocusMode={
-								isMaximized
+								isMaximized || !panesDock
 									? undefined
 									: () => commands.toggleMaximized(tabRef.groupId)
 							}

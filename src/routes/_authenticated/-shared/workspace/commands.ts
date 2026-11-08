@@ -6,16 +6,17 @@ import {
 	getSideGroup,
 	getTabTarget,
 	hasRoomFor,
-	MAX_TABS_PER_GROUP,
 	type TabRef,
 	type TabTarget,
 } from "./model";
+import { type LayoutSettings, layoutSettings } from "./settings";
 import { workspace } from "./store";
 
-/** Shown whenever an action would open a tab in a full group. */
+/** Shown whenever an action would open a tab in a full group (with "warn" set). */
 export function warnTabLimit() {
+	const max = workspace.limits().maxTabsPerGroup;
 	snackbar.show(
-		`An editor group can have up to ${MAX_TABS_PER_GROUP} tabs. Close one to open another.`,
+		`An editor group can have up to ${max} ${max === 1 ? "tab" : "tabs"}. Close one to open another, or change this in Settings.`,
 	);
 }
 
@@ -33,10 +34,22 @@ export function useWorkspaceCommands() {
 		return router.state.matches.some((m) => m.staticData.main === "workspace");
 	}
 
-	function syncUrl({ replace }: { replace: boolean }) {
+	/**
+	 * `keepSearch` keeps the current search params, e.g. the open Settings modal when a
+	 * layout change moves focus underneath it.
+	 */
+	function syncUrl({
+		replace,
+		keepSearch = false,
+	}: {
+		replace: boolean;
+		keepSearch?: boolean;
+	}) {
 		const ref = getActiveTabRef(workspace.getState());
+		// Modal params are valid on every authenticated route.
+		const search = keepSearch ? (prev: object) => prev : undefined;
 		if (!ref) {
-			return router.navigate({ to: "/sessions", replace });
+			return router.navigate({ to: "/sessions", search, replace });
 		}
 		const tab = workspace
 			.getState()
@@ -47,6 +60,7 @@ export function useWorkspaceCommands() {
 			return router.navigate({
 				to: "/files/$fileId",
 				params: { fileId: tab.fileId },
+				search,
 				state: (prev) => ({ ...prev, workspaceTab: ref }),
 				replace,
 			});
@@ -55,6 +69,7 @@ export function useWorkspaceCommands() {
 			return router.navigate({
 				to: "/agents/$agentId",
 				params: { agentId: tab.agentId },
+				search,
 				state: (prev) => ({ ...prev, workspaceTab: ref }),
 				replace,
 			});
@@ -62,6 +77,7 @@ export function useWorkspaceCommands() {
 		return router.navigate({
 			to: "/sessions/$sessionId",
 			params: { sessionId: tab.sessionId },
+			search,
 			state: (prev) => ({ ...prev, workspaceTab: ref }),
 			replace,
 		});
@@ -70,7 +86,8 @@ export function useWorkspaceCommands() {
 	return {
 		/** Opens `target` as a tab in the active group (or focuses its tab there). */
 		open(target: TabTarget) {
-			if (!hasRoomFor(getActiveGroup(workspace.getState()), target)) {
+			const ws = workspace.getState();
+			if (!hasRoomFor(getActiveGroup(ws), target, workspace.limits())) {
 				warnTabLimit();
 				return;
 			}
@@ -78,7 +95,9 @@ export function useWorkspaceCommands() {
 			void syncUrl({ replace: false });
 		},
 		openToSide(target: TabTarget) {
-			if (!hasRoomFor(getSideGroup(workspace.getState()), target)) {
+			const ws = workspace.getState();
+			const limits = workspace.limits();
+			if (!hasRoomFor(getSideGroup(ws, limits), target, limits)) {
 				warnTabLimit();
 				return;
 			}
@@ -89,19 +108,21 @@ export function useWorkspaceCommands() {
 			const ws = workspace.getState();
 			const group = ws.groups.find((g) => g.id === groupId);
 			const tab = group?.tabs.find((t) => t.id === group.activeTabId);
-			const side = ws.groups.find((g) => g.id !== groupId);
-			if (tab && !hasRoomFor(side, getTabTarget(tab))) {
+			const limits = workspace.limits();
+			if (!tab || limits.maxGroups <= 1) return;
+			workspace.focusGroup(groupId);
+			const side = getSideGroup(workspace.getState(), limits);
+			if (!hasRoomFor(side, getTabTarget(tab), limits)) {
 				warnTabLimit();
 				return;
 			}
-			workspace.focusGroup(groupId);
 			workspace.splitActiveTab();
 			void syncUrl({ replace: false });
 		},
 		/** A new session in `groupId`, from its tab bar. */
 		newSession(groupId: string) {
 			const group = workspace.getState().groups.find((g) => g.id === groupId);
-			if (!hasRoomFor(group)) {
+			if (!hasRoomFor(group, undefined, workspace.limits())) {
 				warnTabLimit();
 				return;
 			}
@@ -127,6 +148,17 @@ export function useWorkspaceCommands() {
 			workspace.toggleMaximized(groupId);
 			if (workspace.getState().activeGroupId !== before)
 				void syncUrl({ replace: true });
+		},
+		/**
+		 * Changes the layout settings. Lowering a limit can close tabs (see `fitToLimits`),
+		 * so if that moved focus, the URL follows without closing the Settings modal.
+		 */
+		setLayoutSettings(patch: Partial<LayoutSettings>) {
+			const before = getActiveTabRef(workspace.getState())?.tabId;
+			layoutSettings.set(patch);
+			const after = getActiveTabRef(workspace.getState())?.tabId;
+			if (isWorkspaceRoute() && after !== before)
+				void syncUrl({ replace: true, keepSearch: true });
 		},
 		closeTab(ref: TabRef) {
 			const before = getActiveTabRef(workspace.getState())?.tabId;

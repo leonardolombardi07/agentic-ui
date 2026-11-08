@@ -22,6 +22,7 @@ import { AgentAvatar } from "../../agent-avatar";
 import { AgentIndicator } from "../../agent-indicator";
 import { useWorkspaceCommands } from "../commands";
 import type { AgentTab, EditorGroup, FileTab, SessionTab, Tab } from "../model";
+import { useCanOpenToSide } from "../settings";
 import { useWorkspace } from "../store";
 
 export function TabBar({
@@ -33,6 +34,7 @@ export function TabBar({
 }) {
 	const commands = useWorkspaceCommands();
 	const canSplit = group.activeTabId !== null;
+	const splitAllowed = useCanOpenToSide();
 	const isMaximized = useWorkspace((ws) => ws.maximizedGroupId === group.id);
 	const focusLabel = isMaximized ? "Exit focus mode" : "Focus mode";
 
@@ -42,7 +44,7 @@ export function TabBar({
 				role="tablist"
 				aria-label="Open tabs"
 				/*
-				 * Tabs shrink to fit (there are at most MAX_TABS_PER_GROUP), so this rarely
+				 * Tabs shrink to fit (a few per group, see the layout settings), so this rarely
 				 * overflows. When a narrow split does, it still scrolls by wheel or focus,
 				 * just without a scrollbar eating into the 40px bar.
 				 */
@@ -114,23 +116,25 @@ export function TabBar({
 					</TooltipTrigger>
 					<TooltipContent>{focusLabel} (Ctrl+.)</TooltipContent>
 				</Tooltip>
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<Button
-								variant="ghost"
-								size="icon-sm"
-								aria-label="Split editor right"
-								disabled={!canSplit}
-								onClick={() => commands.splitGroup(group.id)}
-								data-testid="split-editor"
-							/>
-						}
-					>
-						<Columns2Icon />
-					</TooltipTrigger>
-					<TooltipContent>Split editor right</TooltipContent>
-				</Tooltip>
+				{splitAllowed ? (
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									aria-label="Split editor right"
+									disabled={!canSplit}
+									onClick={() => commands.splitGroup(group.id)}
+									data-testid="split-editor"
+								/>
+							}
+						>
+							<Columns2Icon />
+						</TooltipTrigger>
+						<TooltipContent>Split editor right</TooltipContent>
+					</Tooltip>
+				) : null}
 			</div>
 		</div>
 	);

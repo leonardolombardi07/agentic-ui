@@ -1,11 +1,28 @@
 import { createPersistedStore } from "@/lib/store";
 import * as M from "./model";
+import { layoutSettings } from "./settings";
 
 const store = createPersistedStore({
 	key: "agentic-ui:workspace:v1",
 	schema: M.WorkspaceSchema,
 	initialState: M.emptyWorkspace(),
 });
+
+/** The user's layout settings, as the model's limits. Read fresh on every op. */
+function limits(): M.Limits {
+	return layoutSettings.getState();
+}
+
+/*
+ * Lowering a limit closes what no longer fits (see `fitToLimits`), on load too: the
+ * saved workspace may predate the settings, or another tab may have changed them.
+ */
+if (typeof window !== "undefined") {
+	store.setState((ws) => M.fitToLimits(ws, limits()));
+	layoutSettings.subscribe(() =>
+		store.setState((ws) => M.fitToLimits(ws, limits())),
+	);
+}
 
 /** Read the workspace in React. The selector must return a stable value. */
 export function useWorkspace<S>(selector: (ws: M.Workspace) => S): S {
@@ -18,21 +35,22 @@ export function useWorkspace<S>(selector: (ws: M.Workspace) => S): S {
  */
 export const workspace = {
 	getState: store.getState,
+	limits,
 	reveal(target: M.TabTarget, hint?: M.TabRef) {
-		store.setState((ws) => M.reveal(ws, target, hint));
+		store.setState((ws) => M.reveal(ws, target, hint, undefined, limits()));
 	},
 	open(target: M.TabTarget, init?: { draft?: string }) {
 		store.setState((ws) =>
-			M.reveal(ws, target, undefined, { composerDraft: init?.draft }),
+			M.reveal(ws, target, undefined, { composerDraft: init?.draft }, limits()),
 		);
 	},
 	openToSide(target: M.TabTarget, init?: { draft?: string }) {
 		store.setState((ws) =>
-			M.openToSide(ws, target, { composerDraft: init?.draft }),
+			M.openToSide(ws, target, { composerDraft: init?.draft }, limits()),
 		);
 	},
 	splitActiveTab() {
-		store.setState(M.splitActiveTab);
+		store.setState((ws) => M.splitActiveTab(ws, limits()));
 	},
 	closeTab(ref: M.TabRef) {
 		store.setState((ws) => M.closeTab(ws, ref));
@@ -46,8 +64,11 @@ export const workspace = {
 	toggleMaximized(groupId: string) {
 		store.setState((ws) => M.toggleMaximized(ws, groupId));
 	},
-	setSplitRatio(ratio: number) {
-		store.setState((ws) => M.setSplitRatio(ws, ratio));
+	resizeGroups(boundary: number, size: number) {
+		store.setState((ws) => M.resizeGroups(ws, boundary, size));
+	},
+	resetGroupSize(boundary: number) {
+		store.setState((ws) => M.resetGroupSize(ws, boundary));
 	},
 	updateTab(ref: M.TabRef, patch: M.TabPatch) {
 		store.setState((ws) => M.updateTab(ws, ref, patch));

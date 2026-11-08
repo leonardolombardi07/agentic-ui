@@ -15,6 +15,7 @@ import {
 	PendingActionIcon,
 } from "../../-shared/pending-action-icon";
 import { useWorkspaceCommands } from "../../-shared/workspace/commands";
+import { useCanOpenToSide } from "../../-shared/workspace/settings";
 
 /** A session in a side panel list: the Sessions view, or an agent's sessions in the Agents view. */
 export function SessionRow({
@@ -25,6 +26,7 @@ export function SessionRow({
 	isFocused: boolean;
 }) {
 	const commands = useWorkspaceCommands();
+	const canOpenToSide = useCanOpenToSide();
 	const rowRef = useRef<HTMLLIElement>(null);
 	const target = { kind: "session", sessionId: session.id } as const;
 
@@ -67,23 +69,25 @@ export function SessionRow({
 					<PendingActionIcon action={pendingAction} />
 				</span>
 			) : null}
-			<Tooltip>
-				<TooltipTrigger
-					render={
-						<Button
-							variant="ghost"
-							size="icon-xs"
-							aria-label={`Open ${session.title} to the side`}
-							className="absolute top-1/2 right-1.5 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 focus-visible:opacity-100"
-							onClick={() => commands.openToSide(target)}
-							data-testid="sessions-list-open-to-side"
-						/>
-					}
-				>
-					<Columns2Icon />
-				</TooltipTrigger>
-				<TooltipContent>Open to the side (Ctrl+click)</TooltipContent>
-			</Tooltip>
+			{canOpenToSide ? (
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								variant="ghost"
+								size="icon-xs"
+								aria-label={`Open ${session.title} to the side`}
+								className="absolute top-1/2 right-1.5 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 focus-visible:opacity-100"
+								onClick={() => commands.openToSide(target)}
+								data-testid="sessions-list-open-to-side"
+							/>
+						}
+					>
+						<Columns2Icon />
+					</TooltipTrigger>
+					<TooltipContent>Open to the side (Ctrl+click)</TooltipContent>
+				</Tooltip>
+			) : null}
 		</li>
 	);
 }

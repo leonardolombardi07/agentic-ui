@@ -38,9 +38,10 @@ function NewSession() {
 		done.current = true;
 		// Check before creating the draft, or a full group would leave an orphan behind.
 		const ws = workspace.getState();
+		const limits = workspace.limits();
 		const group =
-			search.target === "side" ? getSideGroup(ws) : getActiveGroup(ws);
-		if (!hasRoomFor(group)) {
+			search.target === "side" ? getSideGroup(ws, limits) : getActiveGroup(ws);
+		if (!hasRoomFor(group, undefined, limits)) {
 			warnTabLimit();
 			void navigate({ to: "/sessions", replace: true });
 			return;

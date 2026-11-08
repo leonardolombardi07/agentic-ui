@@ -6,6 +6,7 @@ import {
 	useState,
 } from "react";
 import { useIsResizeDragging } from "@/lib/resize-drag";
+import { useLayoutSettings } from "../../../settings";
 
 /** Narrowest the chat gets while panes are docked beside it, in px. */
 export const CHAT_MIN_WIDTH = 420;
@@ -91,5 +92,9 @@ export function usePanesLayout(
 		});
 	}, [isDragging]);
 
+	// The "overlay" setting keeps panes over the chat whatever the width.
+	const overlayOnly = useLayoutSettings((s) => s.sessionPanes === "overlay");
+	if (overlayOnly && layout && layout.mode !== "sheet")
+		return { ...layout, mode: "sheet" };
 	return layout;
 }

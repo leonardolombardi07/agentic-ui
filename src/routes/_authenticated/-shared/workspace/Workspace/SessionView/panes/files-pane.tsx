@@ -27,6 +27,7 @@ import {
 } from "@/lib/api/types/file";
 import { fileIcon, formatBytes, SessionFilePreview } from "@/lib/file-preview";
 import { useWorkspaceCommands } from "../../../commands";
+import { useCanOpenToSide } from "../../../settings";
 import { workspace } from "../../../store";
 import { IconAction } from "./pane-chrome";
 import type { PaneProps } from "./registry";
@@ -150,6 +151,7 @@ function FileDetail({
 	onOpenAsTab: () => void;
 	onOpenToSide: () => void;
 }) {
+	const canOpenToSide = useCanOpenToSide();
 	return (
 		<div className="flex h-full flex-col" data-testid="file-detail">
 			<div className="flex h-9 shrink-0 items-center gap-1 border-b border-border px-1">
@@ -182,13 +184,15 @@ function FileDetail({
 				>
 					<SquareArrowOutUpRightIcon />
 				</IconAction>
-				<IconAction
-					label="Open to the side"
-					onClick={onOpenToSide}
-					testId="file-open-side"
-				>
-					<Columns2Icon />
-				</IconAction>
+				{canOpenToSide ? (
+					<IconAction
+						label="Open to the side"
+						onClick={onOpenToSide}
+						testId="file-open-side"
+					>
+						<Columns2Icon />
+					</IconAction>
+				) : null}
 				<Tooltip>
 					<TooltipTrigger
 						render={

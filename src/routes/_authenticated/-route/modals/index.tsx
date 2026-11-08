@@ -1,5 +1,6 @@
 import { useSearch } from "@tanstack/react-router";
 import { Appearance } from "./appearance";
+import { LayoutSettingsSection } from "./layout";
 import { SectionsModal } from "./SectionsModal";
 import { customizationsSections, settingsSections } from "./search";
 
@@ -22,6 +23,7 @@ export function Modals() {
 				sections={settingsSections}
 				current={settings}
 			>
+				{settings === "general" && <LayoutSettingsSection />}
 				{settings === "appearance" && <Appearance />}
 			</SectionsModal>
 		);

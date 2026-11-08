@@ -85,18 +85,32 @@ export const EditorGroupSchema = z.object({
 	id: z.string(),
 	tabs: z.array(TabSchema),
 	activeTabId: z.string().nullable(),
+	/** Tab ids, most recently focused first: picks which tab a full group gives up. */
+	recent: z.array(z.string()).catch([]),
 });
 
-/** Keeps groups focused, and lets the tab bar fit its tabs without scrolling. */
-export const MAX_TABS_PER_GROUP = 5;
+/**
+ * How much the workspace may hold. They come from the user's layout settings
+ * (settings.ts); ops take them as an argument so the model stays pure.
+ */
+export type Limits = {
+	maxGroups: number;
+	maxTabsPerGroup: number;
+	/** "replace": a full group closes its least recently used tab. "warn": it refuses. */
+	whenGroupFull: "replace" | "warn";
+};
 
-export const SPLIT_RATIO = { min: 0.2, max: 0.8, default: 0.5 } as const;
+/** Narrowest a group gets, as a share of the workspace. */
+export const MIN_GROUP_SIZE = 0.1;
 
 export const WorkspaceSchema = z.object({
-	groups: z.array(EditorGroupSchema).min(1).max(2),
+	groups: z.array(EditorGroupSchema).min(1),
 	activeGroupId: z.string(),
-	/** Width of the first group as a fraction of the workspace, when split. */
-	splitRatio: z.number().default(SPLIT_RATIO.default),
+	/**
+	 * Each group's share of the workspace width, in group order. Anything that doesn't
+	 * line up with `groups` (older saves, a bad value) reads as an even split.
+	 */
+	sizes: z.array(z.number()).catch([]),
 	/**
 	 * Focus mode: this group takes the whole main area (the other group and the side
 	 * panel hide), so its session has room for docked panes. Always the active group.
@@ -134,9 +148,9 @@ function uid() {
 /** Deterministic id: this is also the server snapshot, so it must match on hydration. */
 export function emptyWorkspace(): Workspace {
 	return {
-		groups: [{ id: "main", tabs: [], activeTabId: null }],
+		groups: [{ id: "main", tabs: [], activeTabId: null, recent: [] }],
 		activeGroupId: "main",
-		splitRatio: SPLIT_RATIO.default,
+		sizes: [1],
 		maximizedGroupId: null,
 	};
 }
@@ -187,23 +201,33 @@ export function getActiveGroup(ws: Workspace): EditorGroup {
 	return ws.groups.find((g) => g.id === ws.activeGroupId) ?? ws.groups[0];
 }
 
-/** The group that isn't active, if the workspace is split. */
-export function getSideGroup(ws: Workspace): EditorGroup | undefined {
-	return ws.groups.find((g) => g.id !== ws.activeGroupId);
+/** Each group's share of the width, summing to 1 (an even split if `sizes` is off). */
+export function groupSizes(ws: Workspace): number[] {
+	const n = ws.groups.length;
+	const sizes = ws.sizes;
+	if (sizes.length !== n || sizes.some((s) => !(s > 0))) {
+		return ws.groups.map(() => 1 / n);
+	}
+	const total = sizes.reduce((a, b) => a + b, 0);
+	return sizes.map((s) => s / total);
 }
 
 /**
- * Whether `group` can show `target` without going over MAX_TABS_PER_GROUP: it already
- * has a tab for it, or has room for one more. No `target` = a brand-new tab (a new
- * session). No `group` = a side group that doesn't exist yet, so it will start empty.
+ * Whether `group` can show `target`: it already has a tab for it, has room for one more,
+ * or makes room by closing its least recently used tab. No `target` = a brand-new tab
+ * (a new session). No `group` = a group that doesn't exist yet, so it will start empty.
  */
 export function hasRoomFor(
 	group: EditorGroup | undefined,
-	target?: TabTarget,
+	target: TabTarget | undefined,
+	limits: Limits,
 ): boolean {
 	if (!group) return true;
 	if (target && group.tabs.some((t) => isTabFor(t, target))) return true;
-	return group.tabs.length < MAX_TABS_PER_GROUP;
+	return (
+		group.tabs.length < limits.maxTabsPerGroup ||
+		limits.whenGroupFull === "replace"
+	);
 }
 
 export function getActiveTab(ws: Workspace): Tab | null {
@@ -234,11 +258,65 @@ function mapGroup(
 	};
 }
 
-function insertAfterActive(group: EditorGroup, tab: Tab): EditorGroup {
-	const index = group.tabs.findIndex((t) => t.id === group.activeTabId);
-	const tabs = [...group.tabs];
+/** Makes `tabId` the group's active tab and its most recent one. */
+function activate(group: EditorGroup, tabId: string | null): EditorGroup {
+	if (tabId === null) return { ...group, activeTabId: null };
+	const recent =
+		group.recent[0] === tabId
+			? group.recent
+			: [tabId, ...group.recent.filter((id) => id !== tabId)];
+	return { ...group, activeTabId: tabId, recent };
+}
+
+function withoutTab(group: EditorGroup, tabId: string): EditorGroup {
+	return {
+		...group,
+		tabs: group.tabs.filter((t) => t.id !== tabId),
+		recent: group.recent.filter((id) => id !== tabId),
+	};
+}
+
+/**
+ * The tab a full group gives up: the least recently focused one, preferring tabs
+ * without a composer draft (closing those loses nothing), never `keep`.
+ */
+function leastRecentTab(
+	group: EditorGroup,
+	keep?: string | null,
+): Tab | undefined {
+	const age = (t: Tab) => {
+		const index = group.recent.indexOf(t.id);
+		return index === -1 ? Number.POSITIVE_INFINITY : index;
+	};
+	const candidates = group.tabs.filter((t) => t.id !== keep);
+	const clean = candidates.filter((t) => t.composerDraft.trim() === "");
+	const pool = clean.length > 0 ? clean : candidates;
+	// Oldest first; ties (never focused) go to the leftmost.
+	return pool.reduce<Tab | undefined>(
+		(oldest, t) => (oldest === undefined || age(t) > age(oldest) ? t : oldest),
+		undefined,
+	);
+}
+
+/**
+ * Adds `tab` right after the active one and focuses it. A full group first closes its
+ * least recently used tab; when that's the active tab (a one-tab group), the new tab
+ * simply takes its place.
+ */
+function insertTab(group: EditorGroup, tab: Tab, limits: Limits): EditorGroup {
+	let g = group;
+	if (g.tabs.length >= limits.maxTabsPerGroup) {
+		const victim = leastRecentTab(g);
+		if (victim && victim.id === g.activeTabId) {
+			const tabs = g.tabs.map((t) => (t.id === victim.id ? tab : t));
+			return activate({ ...withoutTab(g, victim.id), tabs }, tab.id);
+		}
+		if (victim) g = withoutTab(g, victim.id);
+	}
+	const index = g.tabs.findIndex((t) => t.id === g.activeTabId);
+	const tabs = [...g.tabs];
 	tabs.splice(index + 1, 0, tab); // index === -1 -> front
-	return { ...group, tabs, activeTabId: tab.id };
+	return activate({ ...g, tabs }, tab.id);
 }
 
 export function focusTab(ws: Workspace, { groupId, tabId }: TabRef): Workspace {
@@ -246,7 +324,7 @@ export function focusTab(ws: Workspace, { groupId, tabId }: TabRef): Workspace {
 	if (!group?.tabs.some((t) => t.id === tabId)) return ws;
 	if (ws.activeGroupId === groupId && group.activeTabId === tabId) return ws;
 	return {
-		...mapGroup(ws, groupId, (g) => ({ ...g, activeTabId: tabId })),
+		...mapGroup(ws, groupId, (g) => activate(g, tabId)),
 		activeGroupId: groupId,
 		maximizedGroupId: followFocus(ws, groupId),
 	};
@@ -258,13 +336,15 @@ export function focusTab(ws: Workspace, { groupId, tabId }: TabRef): Workspace {
  * 2. The active tab already shows it -> no-op.
  * 3. The active group has a tab for it -> focus it.
  * 4. Otherwise open a new tab in the active group, right after the current one.
- *    If the group is full, nothing changes: callers check `isShowing` and warn the user.
+ *    A full group closes its least recently used tab first ("replace"), or nothing
+ *    changes ("warn"): callers check `isShowing` and tell the user.
  */
 export function reveal(
 	ws: Workspace,
 	target: TabTarget,
-	hint?: TabRef,
-	init?: TabInit,
+	hint: TabRef | undefined,
+	init: TabInit | undefined,
+	limits: Limits,
 ): Workspace {
 	if (hint) {
 		const tab = ws.groups
@@ -277,42 +357,87 @@ export function reveal(
 	const group = getActiveGroup(ws);
 	const existing = group.tabs.find((t) => isTabFor(t, target));
 	if (existing) return focusTab(ws, { groupId: group.id, tabId: existing.id });
-	if (!hasRoomFor(group)) return ws;
+	if (!hasRoomFor(group, target, limits)) return ws;
 	return mapGroup(ws, group.id, (g) =>
-		insertAfterActive(g, newTab(target, init)),
+		insertTab(g, newTab(target, init), limits),
 	);
 }
 
-/** "Open to the side": target the other group, creating it if needed (max 2). No-op if it's full. */
+/**
+ * Where "open to the side" lands: the group right of the active one; else undefined
+ * while a new group fits (it will be created); else the group to the left; with a
+ * single group allowed, the active group itself.
+ */
+export function getSideGroup(
+	ws: Workspace,
+	limits: Limits,
+): EditorGroup | undefined {
+	const index = ws.groups.findIndex((g) => g.id === ws.activeGroupId);
+	const right = ws.groups[index + 1];
+	if (right) return right;
+	if (ws.groups.length < limits.maxGroups) return undefined;
+	return ws.groups[index - 1] ?? ws.groups[index];
+}
+
+/**
+ * "Open to the side", as in VSCode: the group to the right of the active one. With no
+ * group there, a new one splits off the active group while under `maxGroups`, else the
+ * group to the left takes it. With one group allowed, it just opens here.
+ * No-op if the target group is full (and doesn't replace).
+ */
 export function openToSide(
 	ws: Workspace,
 	target: TabTarget,
-	init?: TabInit,
+	init: TabInit | undefined,
+	limits: Limits,
 ): Workspace {
-	let side = getSideGroup(ws);
-	if (!hasRoomFor(side, target)) return ws;
-	// Opening to the side means wanting both groups on screen: leave focus mode.
-	let next: Workspace = { ...ws, maximizedGroupId: null };
+	const index = ws.groups.findIndex((g) => g.id === ws.activeGroupId);
+	let side = getSideGroup(ws, limits);
+	let next = ws;
 	if (!side) {
-		side = { id: uid(), tabs: [], activeTabId: null };
-		// A new split starts even, like VSCode.
+		side = { id: uid(), tabs: [], activeTabId: null, recent: [] };
+		/*
+		 * VSCode's "auto" split sizing: even groups stay even (all of them share the
+		 * width again); once the user has resized, the new group halves the one it
+		 * splits off and leaves the others alone.
+		 */
+		const sizes = groupSizes(ws);
+		const isEven = sizes.every((s) => Math.abs(s - 1 / sizes.length) < 0.01);
+		const half = sizes[index] / 2;
 		next = {
-			...next,
-			groups: [...ws.groups, side],
-			splitRatio: SPLIT_RATIO.default,
+			...ws,
+			groups: spliced(ws.groups, index + 1, 0, side),
+			sizes: isEven
+				? [...sizes, 0].map(() => 1 / (sizes.length + 1))
+				: spliced(sizes, index, 1, half, half),
 		};
 	}
-	return reveal({ ...next, activeGroupId: side.id }, target, undefined, init);
+	if (side.id === ws.activeGroupId)
+		return reveal(ws, target, undefined, init, limits);
+	if (!hasRoomFor(side, target, limits)) return ws;
+	// Opening to the side means wanting both groups on screen: leave focus mode.
+	return reveal(
+		{ ...next, activeGroupId: side.id, maximizedGroupId: null },
+		target,
+		undefined,
+		init,
+		limits,
+	);
 }
 
-export function splitActiveTab(ws: Workspace): Workspace {
+export function splitActiveTab(ws: Workspace, limits: Limits): Workspace {
 	const tab = getActiveTab(ws);
-	if (!tab) return ws;
+	if (!tab || limits.maxGroups <= 1) return ws;
 	// Copy view state like VSCode, but not the draft: two composers with the same text is confusing.
-	return openToSide(ws, getTabTarget(tab), {
-		scrollTop: tab.scrollTop,
-		panes: tab.kind === "session" ? tab.panes : undefined,
-	});
+	return openToSide(
+		ws,
+		getTabTarget(tab),
+		{
+			scrollTop: tab.scrollTop,
+			panes: tab.kind === "session" ? tab.panes : undefined,
+		},
+		limits,
+	);
 }
 
 export function closeTab(ws: Workspace, { groupId, tabId }: TabRef): Workspace {
@@ -320,24 +445,32 @@ export function closeTab(ws: Workspace, { groupId, tabId }: TabRef): Workspace {
 	if (!group) return ws;
 	const index = group.tabs.findIndex((t) => t.id === tabId);
 	if (index === -1) return ws;
-	const tabs = group.tabs.filter((t) => t.id !== tabId);
+	const rest = withoutTab(group, tabId);
 
-	if (tabs.length === 0 && ws.groups.length === 2) {
-		const remaining = ws.groups.filter((g) => g.id !== groupId);
+	if (rest.tabs.length === 0 && ws.groups.length > 1) {
+		// An empty group closes; its width goes to its neighbour (left, else right).
+		const groupIndex = ws.groups.indexOf(group);
+		const neighbour = groupIndex > 0 ? groupIndex - 1 : 1;
+		const sizes = groupSizes(ws);
+		sizes[neighbour] += sizes[groupIndex];
 		return {
 			...ws,
-			groups: remaining,
-			activeGroupId: remaining[0].id,
+			groups: spliced(ws.groups, groupIndex, 1),
+			sizes: spliced(sizes, groupIndex, 1),
+			activeGroupId:
+				ws.activeGroupId === groupId
+					? ws.groups[neighbour].id
+					: ws.activeGroupId,
 			maximizedGroupId:
 				ws.maximizedGroupId === groupId ? null : ws.maximizedGroupId,
 		};
 	}
-	// Neighbour for now; MRU order later.
+	// The neighbour takes focus; `recent` only decides what a full group gives up.
 	const activeTabId =
 		group.activeTabId === tabId
-			? (tabs[index]?.id ?? tabs[index - 1]?.id ?? null)
+			? (rest.tabs[index]?.id ?? rest.tabs[index - 1]?.id ?? null)
 			: group.activeTabId;
-	return mapGroup(ws, groupId, () => ({ ...group, tabs, activeTabId }));
+	return mapGroup(ws, groupId, () => activate(rest, activeTabId));
 }
 
 export function focusGroup(ws: Workspace, groupId: string): Workspace {
@@ -376,9 +509,88 @@ export function updateTab(
 	}));
 }
 
-export function setSplitRatio(ws: Workspace, ratio: number): Workspace {
-	const next = Math.min(SPLIT_RATIO.max, Math.max(SPLIT_RATIO.min, ratio));
-	return next === ws.splitRatio ? ws : { ...ws, splitRatio: next };
+/**
+ * Moves the divider after group `boundary`: that group gets `size` (a share of the
+ * workspace) and the next one the rest of the pair's width. Other groups don't move.
+ */
+export function resizeGroups(
+	ws: Workspace,
+	boundary: number,
+	size: number,
+): Workspace {
+	const sizes = groupSizes(ws);
+	if (boundary < 0 || boundary >= sizes.length - 1) return ws;
+	const pair = sizes[boundary] + sizes[boundary + 1];
+	const left = Math.min(pair - MIN_GROUP_SIZE, Math.max(MIN_GROUP_SIZE, size));
+	if (left === sizes[boundary] && ws.sizes.length === sizes.length) return ws;
+	sizes[boundary] = left;
+	sizes[boundary + 1] = pair - left;
+	return { ...ws, sizes };
+}
+
+/** Evens out the two groups beside the divider after `boundary` (double-click). */
+export function resetGroupSize(ws: Workspace, boundary: number): Workspace {
+	const sizes = groupSizes(ws);
+	if (boundary < 0 || boundary >= sizes.length - 1) return ws;
+	return resizeGroups(
+		ws,
+		boundary,
+		(sizes[boundary] + sizes[boundary + 1]) / 2,
+	);
+}
+
+/**
+ * Brings a workspace within `limits`, when the user lowers them (or on load, if the
+ * saved workspace is bigger than they allow). Extra groups fold into the one on their
+ * left, without duplicating tabs open there; then each group closes its least
+ * recently used tabs, never its active one. Returns `ws` itself when it already fits.
+ */
+export function fitToLimits(ws: Workspace, limits: Limits): Workspace {
+	let groups = ws.groups;
+	let activeGroupId = ws.activeGroupId;
+	while (groups.length > Math.max(1, limits.maxGroups)) {
+		const last = groups[groups.length - 1];
+		const into = groups[groups.length - 2];
+		const moved = last.tabs.filter(
+			(t) => !into.tabs.some((u) => isTabFor(u, getTabTarget(t))),
+		);
+		let merged: EditorGroup = {
+			...into,
+			tabs: [...into.tabs, ...moved],
+			recent: [...into.recent, ...last.recent],
+		};
+		if (activeGroupId === last.id) {
+			// Keep what the user was looking at on screen.
+			const active = last.tabs.find((t) => t.id === last.activeTabId);
+			const shown =
+				active && merged.tabs.find((t) => isTabFor(t, getTabTarget(active)));
+			if (shown) merged = activate(merged, shown.id);
+			activeGroupId = into.id;
+		}
+		groups = [...groups.slice(0, -2), merged];
+	}
+	groups = groups.map((group) => {
+		let g = group;
+		while (g.tabs.length > Math.max(1, limits.maxTabsPerGroup)) {
+			const victim = leastRecentTab(g, g.activeTabId);
+			if (!victim) break;
+			g = withoutTab(g, victim.id);
+		}
+		return g;
+	});
+	const unchanged =
+		groups.length === ws.groups.length &&
+		groups.every((g, i) => g === ws.groups[i]);
+	if (unchanged) return ws;
+	return {
+		...ws,
+		groups,
+		activeGroupId,
+		sizes: groups.length === ws.groups.length ? ws.sizes : [],
+		maximizedGroupId: groups.some((g) => g.id === ws.maximizedGroupId)
+			? ws.maximizedGroupId
+			: null,
+	};
 }
 
 /* -------------------------------------------------------------------------- */
@@ -518,4 +730,16 @@ export function selectFile(
 			? tab
 			: withPanes(tab, { ...tab.panes, selectedFileId: fileId }),
 	);
+}
+
+/** `Array.prototype.toSpliced`, which our TS lib target doesn't include yet. */
+function spliced<T>(
+	array: readonly T[],
+	start: number,
+	deleteCount: number,
+	...items: T[]
+): T[] {
+	const copy = [...array];
+	copy.splice(start, deleteCount, ...items);
+	return copy;
 }

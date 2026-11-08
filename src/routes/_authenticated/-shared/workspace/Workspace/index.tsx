@@ -5,26 +5,28 @@ import { buttonVariants } from "@/components/ui/button";
 import { ResizeHandle } from "@/components/ui/resize-handle";
 import { resizeDrag } from "@/lib/resize-drag";
 import { useWorkspaceCommands } from "../commands";
-import { SPLIT_RATIO } from "../model";
+import { groupSizes, MIN_GROUP_SIZE } from "../model";
 import { useWorkspace, workspace } from "../store";
 import { EditorGroup } from "./EditorGroup";
 
 export function Workspace() {
 	const groups = useWorkspace((ws) => ws.groups);
-	const splitRatio = useWorkspace((ws) => ws.splitRatio);
+	const sizesKey = useWorkspace((ws) => groupSizes(ws).join(","));
+	const sizes = sizesKey.split(",").map(Number);
 	const maximizedGroupId = useWorkspace((ws) => ws.maximizedGroupId);
 	useFocusModeShortcut();
 	const containerRef = useRef<HTMLDivElement>(null);
-	const ratioAtDragStart = useRef(splitRatio);
+	const sizeAtDragStart = useRef(0);
 	const isEmpty = groups.length === 1 && groups[0].tabs.length === 0;
 
 	if (isEmpty) return <EmptyState />;
 
-	function pxToRatio(px: number) {
+	function pxToShare(px: number) {
 		const width = containerRef.current?.clientWidth ?? 0;
 		return width > 0 ? px / width : 0;
 	}
 
+	const isAlone = groups.length === 1 || maximizedGroupId !== null;
 	return (
 		<div
 			ref={containerRef}
@@ -32,15 +34,14 @@ export function Workspace() {
 			data-testid="workspace"
 		>
 			{groups.map((group, index) => {
-				const share =
-					groups.length === 1 ? 1 : index === 0 ? splitRatio : 1 - splitRatio;
 				/*
-				 * Focus mode hides the other group with CSS rather than unmounting it, so its
-				 * scroll position and composer state are there when focus mode ends.
+				 * Focus mode hides the other groups with CSS rather than unmounting them, so
+				 * their scroll positions and composer state are there when focus mode ends.
 				 */
 				const isHidden =
 					maximizedGroupId !== null && group.id !== maximizedGroupId;
-				const isAlone = groups.length === 1 || maximizedGroupId !== null;
+				// The divider on a group's left edge resizes it against the group before it.
+				const boundary = index - 1;
 				return (
 					<div
 						key={group.id}
@@ -51,33 +52,39 @@ export function Workspace() {
 									? "relative flex min-w-0 border-l border-border"
 									: "relative flex min-w-0"
 						}
-						// flex-grow by share with a 0 basis: the two groups always fill the row exactly.
-						style={{ flex: `${isAlone ? 1 : share} 1 0px` }}
+						// flex-grow by share with a 0 basis: the groups always fill the row exactly.
+						style={{ flex: `${isAlone ? 1 : sizes[index]} 1 0px` }}
+						data-testid="editor-group-column"
 					>
 						<EditorGroup group={group} />
 						{index > 0 && !isAlone ? (
 							<ResizeHandle
 								aria-label="Resize editor groups"
 								className="-left-[3.5px]"
-								value={splitRatio * 100}
-								min={SPLIT_RATIO.min * 100}
-								max={SPLIT_RATIO.max * 100}
+								value={sizes[boundary] * 100}
+								min={MIN_GROUP_SIZE * 100}
+								max={(sizes[boundary] + sizes[index] - MIN_GROUP_SIZE) * 100}
 								onResizeStart={() => {
-									ratioAtDragStart.current = workspace.getState().splitRatio;
+									sizeAtDragStart.current = groupSizes(workspace.getState())[
+										boundary
+									];
 									resizeDrag.start();
 								}}
 								onResizeEnd={resizeDrag.end}
 								onResize={(deltaX) =>
-									workspace.setSplitRatio(
-										ratioAtDragStart.current + pxToRatio(deltaX),
+									workspace.resizeGroups(
+										boundary,
+										sizeAtDragStart.current + pxToShare(deltaX),
 									)
 								}
 								onKeyboardResize={(step) =>
-									workspace.setSplitRatio(
-										workspace.getState().splitRatio + pxToRatio(step),
+									workspace.resizeGroups(
+										boundary,
+										groupSizes(workspace.getState())[boundary] +
+											pxToShare(step),
 									)
 								}
-								onReset={() => workspace.setSplitRatio(SPLIT_RATIO.default)}
+								onReset={() => workspace.resetGroupSize(boundary)}
 								data-testid="editor-groups-resize"
 							/>
 						) : null}

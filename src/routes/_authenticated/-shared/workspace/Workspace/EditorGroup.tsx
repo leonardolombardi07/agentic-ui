@@ -1,6 +1,7 @@
 import { cn } from "cn";
 import { useWorkspaceCommands } from "../commands";
 import type { EditorGroup as EditorGroupType } from "../model";
+import { showsTabBar, useLayoutSettings } from "../settings";
 import { useWorkspace } from "../store";
 import { AgentView } from "./AgentView";
 import { FileView } from "./FileView";
@@ -11,6 +12,7 @@ export function EditorGroup({ group }: { group: EditorGroupType }) {
 	const commands = useWorkspaceCommands();
 	const isActiveGroup = useWorkspace((ws) => ws.activeGroupId === group.id);
 	const activeTab = group.tabs.find((t) => t.id === group.activeTabId) ?? null;
+	const hasTabBar = useLayoutSettings(showsTabBar);
 
 	return (
 		<section
@@ -23,7 +25,9 @@ export function EditorGroup({ group }: { group: EditorGroupType }) {
 			)}
 			onPointerDown={() => commands.focusGroup(group.id)}
 		>
-			<TabBar group={group} isActiveGroup={isActiveGroup} />
+			{hasTabBar ? (
+				<TabBar group={group} isActiveGroup={isActiveGroup} />
+			) : null}
 			<div className="min-h-0 flex-1 overflow-auto">
 				{/* Only the active tab is mounted; the rest are records in the store. */}
 				{activeTab?.kind === "agent" ? (
