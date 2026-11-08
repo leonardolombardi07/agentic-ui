@@ -15,9 +15,10 @@ import { useWorkspaceCommands } from "../../commands";
 import type { SessionTab } from "../../model";
 import { workspace } from "../../store";
 import { Messages } from "./Messages";
+import { SessionLayout } from "./panes/session-layout";
 import { useSessionChat } from "./use-session-chat";
 
-/** A session tab: breadcrumb, transcript and composer. The right panel comes later. */
+/** A session tab: breadcrumb, transcript, composer and its panes. */
 export function SessionView({
 	tab,
 	groupId,
@@ -84,19 +85,25 @@ function SessionChat({
 	}
 
 	return (
-		<div className="flex h-full flex-col" data-testid="session-view">
-			<nav
-				aria-label="Breadcrumb"
-				className="flex items-center gap-1 border-b border-border px-4 py-2 text-sm text-muted-foreground"
-			>
-				{session.leadAgentId ? (
-					<AgentCrumb agentId={session.leadAgentId} />
-				) : (
-					<span>Default agent</span>
-				)}
-				<ChevronRightIcon aria-hidden className="size-3.5" />
-				<h1 className="truncate text-foreground">{session.title}</h1>
-			</nav>
+		<SessionLayout
+			tabRef={{ groupId, tabId: tab.id }}
+			panes={tab.panes}
+			paneProps={{ session, messages: chat.messages }}
+			breadcrumb={
+				<nav
+					aria-label="Breadcrumb"
+					className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground"
+				>
+					{session.leadAgentId ? (
+						<AgentCrumb agentId={session.leadAgentId} />
+					) : (
+						<span className="shrink-0">Default agent</span>
+					)}
+					<ChevronRightIcon aria-hidden className="size-3.5 shrink-0" />
+					<h1 className="truncate text-foreground">{session.title}</h1>
+				</nav>
+			}
+		>
 			<Messages
 				messages={chat.messages}
 				isRunning={chat.isRunning}
@@ -156,7 +163,7 @@ function SessionChat({
 					onStop={chat.stop}
 				/>
 			</div>
-		</div>
+		</SessionLayout>
 	);
 }
 
@@ -166,7 +173,7 @@ function AgentCrumb({ agentId }: { agentId: string }) {
 		<Link
 			to="/agents/$agentId"
 			params={{ agentId }}
-			className="hover:text-foreground hover:underline"
+			className="shrink-0 hover:text-foreground hover:underline"
 		>
 			{agent?.name ?? agentId}
 		</Link>

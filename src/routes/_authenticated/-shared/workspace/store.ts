@@ -49,4 +49,20 @@ export const workspace = {
 	updateTab(ref: M.TabRef, patch: M.TabPatch) {
 		store.setState((ws) => M.updateTab(ws, ref, patch));
 	},
+	/* Panes are view state: they never touch the URL, so callers use these directly. */
+	openPane(ref: M.TabRef, id: M.PaneId) {
+		store.setState((ws) => M.openPane(ws, ref, id));
+	},
+	closePane(ref: M.TabRef, id: M.PaneId) {
+		store.setState((ws) => M.closePane(ws, ref, id));
+	},
+	setPanesOpen(ref: M.TabRef, open: boolean, fallback: M.PaneId) {
+		store.setState((ws) => M.setPanesOpen(ws, ref, open, fallback));
+	},
+	touchPane(ref: M.TabRef, id: M.PaneId) {
+		store.setState((ws) => M.touchPane(ws, ref, id));
+	},
+	setPanesSize(ref: M.TabRef, size: number) {
+		store.setState((ws) => M.setPanesSize(ws, ref, size));
+	},
 };

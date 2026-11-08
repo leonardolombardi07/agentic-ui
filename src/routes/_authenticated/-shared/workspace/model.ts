@@ -12,14 +12,48 @@ const TabBaseSchema = z.object({
 	scrollTop: z.number().nullable(),
 });
 
+/** The views a session can show beside (or over) its chat. Display data lives in the SessionView registry. */
+export const PaneIdSchema = z.enum(["files", "agent", "context", "activity"]);
+
+/** Panes stack in columns of this many; a new column starts on the right. */
+export const PANES_PER_COLUMN = 2;
+
+/**
+ * Share of the group's width the docked panes take, by number of columns. Opening a
+ * pane that adds a column widens the panes to at least this; closing one shrinks them back.
+ */
+export const PANES_SIZE_BY_COLUMNS = [0.38, 0.55] as const;
+
+export const PANES_SIZE = { min: 0.2, max: 0.75 } as const;
+
+export const PanesSchema = z.object({
+	/** Whether the panes are shown. Closing hides them but keeps `views` for next time. */
+	open: z.boolean(),
+	/** Open panes, in the order they were opened (the grid's order). */
+	views: z.array(PaneIdSchema),
+	/** Open panes, most recently used first: the sheet shows the first one. */
+	recent: z.array(PaneIdSchema),
+	/** Share of the group's width when docked. */
+	size: z.number(),
+});
+
+const DEFAULT_PANES: Panes = {
+	open: false,
+	views: [],
+	recent: [],
+	size: PANES_SIZE_BY_COLUMNS[0],
+};
+
 export const SessionTabSchema = TabBaseSchema.extend({
 	/** Defaulted so tabs saved before agent tabs existed still load. */
 	kind: z.literal("session").default("session"),
 	sessionId: z.string(),
-	rightPanel: z.object({
-		open: z.boolean(),
-		section: z.enum(["files", "agent", "context"]).optional(),
-	}),
+	/*
+	 * Per tab, not per session: two tabs on one session can show different panes, like
+	 * two editors on one file. `.catch` so a pane id dropped from the enum only resets
+	 * this tab's panes instead of the whole saved workspace.
+	 */
+	panes: PanesSchema.catch(() => DEFAULT_PANES),
 });
 
 /** An agent's page opened as an editor, like VSCode's extension details. */
@@ -49,6 +83,8 @@ export const WorkspaceSchema = z.object({
 	splitRatio: z.number().default(SPLIT_RATIO.default),
 });
 
+export type PaneId = z.infer<typeof PaneIdSchema>;
+export type Panes = z.infer<typeof PanesSchema>;
 export type SessionTab = z.infer<typeof SessionTabSchema>;
 export type AgentTab = z.infer<typeof AgentTabSchema>;
 export type Tab = z.infer<typeof TabSchema>;
@@ -63,7 +99,7 @@ export type TabInit = {
 	composerDraft?: string;
 	scrollTop?: number | null;
 	/** Ignored by agent tabs. */
-	rightPanel?: SessionTab["rightPanel"];
+	panes?: Panes;
 };
 /** The fields every kind of tab has, so callers can update them without narrowing. */
 export type TabPatch = { composerDraft?: string; scrollTop?: number | null };
@@ -94,7 +130,7 @@ function newTab(target: TabTarget, init?: TabInit): Tab {
 		...base,
 		kind: "session",
 		sessionId: target.sessionId,
-		rightPanel: init?.rightPanel ?? { open: false },
+		panes: init?.panes ?? DEFAULT_PANES,
 	};
 }
 
@@ -237,7 +273,7 @@ export function splitActiveTab(ws: Workspace): Workspace {
 	// Copy view state like VSCode, but not the draft: two composers with the same text is confusing.
 	return openToSide(ws, getTabTarget(tab), {
 		scrollTop: tab.scrollTop,
-		rightPanel: tab.kind === "session" ? tab.rightPanel : undefined,
+		panes: tab.kind === "session" ? tab.panes : undefined,
 	});
 }
 
@@ -280,4 +316,128 @@ export function updateTab(
 export function setSplitRatio(ws: Workspace, ratio: number): Workspace {
 	const next = Math.min(SPLIT_RATIO.max, Math.max(SPLIT_RATIO.min, ratio));
 	return next === ws.splitRatio ? ws : { ...ws, splitRatio: next };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Panes: the views a session tab shows beside (or over) its chat.             */
+/* -------------------------------------------------------------------------- */
+
+/** How many columns `count` panes fill. */
+export function paneColumnCount(count: number): number {
+	return Math.ceil(count / PANES_PER_COLUMN);
+}
+
+/** The docked panes' starting share of the group for `columns` columns. */
+export function defaultPanesSize(columns: number): number {
+	const index = Math.min(columns, PANES_SIZE_BY_COLUMNS.length) - 1;
+	return PANES_SIZE_BY_COLUMNS[Math.max(index, 0)];
+}
+
+function mapSessionTab(
+	ws: Workspace,
+	{ groupId, tabId }: TabRef,
+	fn: (tab: SessionTab) => SessionTab,
+): Workspace {
+	const group = ws.groups.find((g) => g.id === groupId);
+	const tab = group?.tabs.find((t) => t.id === tabId);
+	if (!tab || tab.kind !== "session") return ws;
+	const next = fn(tab);
+	if (next === tab) return ws;
+	return mapGroup(ws, groupId, (g) => ({
+		...g,
+		tabs: g.tabs.map((t) => (t.id === tabId ? next : t)),
+	}));
+}
+
+function withPanes(tab: SessionTab, panes: Panes): SessionTab {
+	return panes === tab.panes ? tab : { ...tab, panes };
+}
+
+function toFront(recent: PaneId[], id: PaneId): PaneId[] {
+	return recent[0] === id ? recent : [id, ...recent.filter((v) => v !== id)];
+}
+
+/** Shows `id` (opening it if needed) and makes it the most recent. */
+export function openPane(ws: Workspace, ref: TabRef, id: PaneId): Workspace {
+	return mapSessionTab(ws, ref, (tab) => {
+		const p = tab.panes;
+		const isOpen = p.views.includes(id);
+		const recent = toFront(p.recent, id);
+		if (isOpen && p.open && recent === p.recent) return tab;
+		const views = isOpen ? p.views : [...p.views, id];
+		const columns = paneColumnCount(views.length);
+		// A new column needs room: widen to its default, but never shrink what the user set.
+		const size =
+			columns > paneColumnCount(p.views.length)
+				? Math.max(p.size, defaultPanesSize(columns))
+				: p.size;
+		return withPanes(tab, { open: true, views, recent, size });
+	});
+}
+
+/** Removes `id`. Closing the last pane hides the panes. */
+export function closePane(ws: Workspace, ref: TabRef, id: PaneId): Workspace {
+	return mapSessionTab(ws, ref, (tab) => {
+		const p = tab.panes;
+		if (!p.views.includes(id)) return tab;
+		const views = p.views.filter((v) => v !== id);
+		const columns = paneColumnCount(views.length);
+		// Losing a column gives its room back to the chat.
+		const size =
+			columns < paneColumnCount(p.views.length) && columns > 0
+				? Math.min(p.size, defaultPanesSize(columns))
+				: p.size;
+		return withPanes(tab, {
+			open: views.length > 0 && p.open,
+			views,
+			recent: p.recent.filter((v) => v !== id),
+			size,
+		});
+	});
+}
+
+/** Shows or hides all panes. Showing with none open opens `fallback`. */
+export function setPanesOpen(
+	ws: Workspace,
+	ref: TabRef,
+	open: boolean,
+	fallback: PaneId,
+): Workspace {
+	const tab = findSessionTab(ws, ref);
+	if (!tab) return ws;
+	if (open && tab.panes.views.length === 0) return openPane(ws, ref, fallback);
+	return mapSessionTab(ws, ref, (t) =>
+		t.panes.open === open ? t : withPanes(t, { ...t.panes, open }),
+	);
+}
+
+/** Using a pane (pointer or focus inside it) makes it the most recent. */
+export function touchPane(ws: Workspace, ref: TabRef, id: PaneId): Workspace {
+	return mapSessionTab(ws, ref, (tab) => {
+		if (!tab.panes.views.includes(id)) return tab;
+		const recent = toFront(tab.panes.recent, id);
+		return recent === tab.panes.recent
+			? tab
+			: withPanes(tab, { ...tab.panes, recent });
+	});
+}
+
+export function setPanesSize(
+	ws: Workspace,
+	ref: TabRef,
+	size: number,
+): Workspace {
+	const next = Math.min(PANES_SIZE.max, Math.max(PANES_SIZE.min, size));
+	return mapSessionTab(ws, ref, (tab) =>
+		tab.panes.size === next
+			? tab
+			: withPanes(tab, { ...tab.panes, size: next }),
+	);
+}
+
+function findSessionTab(ws: Workspace, ref: TabRef): SessionTab | undefined {
+	const tab = ws.groups
+		.find((g) => g.id === ref.groupId)
+		?.tabs.find((t) => t.id === ref.tabId);
+	return tab?.kind === "session" ? tab : undefined;
 }
