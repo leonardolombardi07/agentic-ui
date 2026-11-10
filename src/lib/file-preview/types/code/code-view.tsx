@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { WrapText } from "lucide-react";
 import * as React from "react";
-import type { ThemedToken } from "shiki/core";
+import { Tokens } from "@/lib/shiki";
 import {
 	CopyButton,
 	PreviewToolbar,
@@ -99,25 +99,3 @@ export function CodeView({
 		</div>
 	);
 }
-
-export function Tokens({ line }: { line: ThemedToken[] }) {
-	return line.map((t, i) => (
-		<span key={i} style={tokenStyle(t)}>
-			{t.content}
-		</span>
-	));
-}
-
-// Colours are `--shiki-light` / `--shiki-dark` variables (see lib/shiki.ts); fontStyle is Shiki's bit flags.
-const tokenStyle = ({
-	htmlStyle,
-	fontStyle = 0,
-}: ThemedToken): React.CSSProperties => ({
-	...(htmlStyle as React.CSSProperties),
-	fontStyle: fontStyle & 1 ? "italic" : undefined,
-	fontWeight: fontStyle & 2 ? 600 : undefined,
-	textDecoration:
-		[fontStyle & 4 && "underline", fontStyle & 8 && "line-through"]
-			.filter(Boolean)
-			.join(" ") || undefined,
-});

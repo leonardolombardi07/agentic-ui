@@ -3,6 +3,7 @@ import { Code2, Eye, ImageOff } from "lucide-react";
 import * as React from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Tokens } from "@/lib/shiki";
 import { LinesSkeleton } from "../../components/lines-skeleton";
 import { ToolbarButton } from "../../components/preview-toolbar";
 import styles from "../../components/prose.module.css";
@@ -10,7 +11,7 @@ import { decodeText } from "../../lib/fetch-bytes";
 import { highlight } from "../../lib/shiki";
 import { usePreviewData } from "../../lib/use-preview-data";
 import type { PreviewProps } from "../../types";
-import { CodeView, Tokens, useCodeDocument } from "../code/code-view";
+import { CodeView, useCodeDocument } from "../code/code-view";
 
 /**
  * GitHub-flavoured Markdown (tables, task lists, strikethrough, autolinks) with Shiki code blocks.
