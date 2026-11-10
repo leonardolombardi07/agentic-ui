@@ -2,7 +2,7 @@ import {
 	type ChatPersistence,
 	memoryPersistence,
 } from "@tanstack/ai-persistence";
-import { SEED_TRANSCRIPTS } from "./sessions/seed-transcripts.server";
+import { SEED_TRANSCRIPTS } from "./sessions/seed-transcripts";
 
 /*
  * TanStack AI's chat state, keyed by `threadId` (= session id): the transcript, runs

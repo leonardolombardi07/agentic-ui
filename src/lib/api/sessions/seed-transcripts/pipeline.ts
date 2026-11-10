@@ -1,14 +1,8 @@
 import type { ModelMessage } from "@tanstack/ai";
 
-/*
- * Transcripts for some of the seeded sessions (`store.server.ts`), so the chat
- * has history to show in dev. They exercise the markdown renderer
- * (`@/lib/markdown`): interactive tables, code blocks, alerts, task lists and
- * footnotes. Stored as TanStack AI keeps them: `ModelMessage`s per thread.
- */
+/* A sales pipeline review: filters, totals and a model-written totals row. */
 
 export const PIPELINE_SESSION_ID = "s-q4-pipeline";
-const AUTH_SESSION_ID = "s-auth-pr";
 
 type Deal = {
 	account: string;
@@ -268,10 +262,18 @@ function stageSummary(): string {
 		);
 		return `| ${stage} | ${deals.length} | ${usd.format(amount)} | ${usd.format(weighted)} |`;
 	});
+	const amount = DEALS.reduce((sum, d) => sum + d.amount, 0);
+	const weighted = DEALS.reduce(
+		(sum, d) => sum + (d.amount * d.probability) / 100,
+		0,
+	);
+	// Written by the "model": the table pins it as its footer.
+	const total = `| **Total** | **${DEALS.length}** | **${usd.format(amount)}** | **${usd.format(weighted)}** |`;
 	return [
 		"| Stage | Deals | Pipeline | Weighted |",
 		"| --- | ---: | ---: | ---: |",
 		...rows,
+		total,
 	].join("\n");
 }
 
@@ -282,7 +284,7 @@ const PIPELINE_ANSWER = `Here's the Q4 pipeline as of **Oct 31**. I pulled every
 ${stageSummary()}
 
 > [!TIP]
-> Click a column header to sort, or use the search box to filter, e.g. type \`Ana\` to see one rep's deals. The copy menu pastes straight into a spreadsheet.
+> Click a column header to sort. Hover a header for its filter: pick a **Stage** or **Owner**, or set a range on **Amount** (e.g. min \`100K\`). The copy menu pastes the matching rows straight into a spreadsheet.
 
 ## All open deals
 
@@ -347,108 +349,29 @@ print(summary.to_markdown())
 > The warehouse refreshes nightly at 02:00 UTC, so deals updated today show up tomorrow.
 `;
 
-const REVIEW_ANSWER = `I reviewed \`auth-middleware.ts\`. The happy path is fine, but there are two issues worth fixing before merge.
-
-> [!CAUTION]
-> Expired tokens are accepted: \`verifyToken\` checks the signature only, and the \`exp\` check is still a TODO.
-
-### Suggested change
-
-\`\`\`diff
- 	const claims = await verifyToken(token);
- 	if (!claims) return new Response("Unauthorized", { status: 401 });
--	// TODO: check claims.exp against clock skew
-+	const now = Math.floor(Date.now() / 1000);
-+	if (claims.exp + CLOCK_SKEW_SECONDS < now) {
-+		return new Response("Token expired", { status: 401 });
-+	}
- 	return next();
-\`\`\`
-
-### Full middleware, with both fixes
-
-\`\`\`ts
-import { verifyToken } from "./tokens";
-
-/** Tolerated drift between our clock and the issuer's, in seconds. */
-const CLOCK_SKEW_SECONDS = 30;
-
-/** The scheme is case-insensitive (RFC 7235), so "bearer" must work too. */
-const BEARER = /^bearer\\s+(.+)$/i;
-
-/** Rejects requests without a valid, unexpired bearer token. */
-export async function authMiddleware(
-	request: Request,
-	next: () => Promise<Response>,
-): Promise<Response> {
-	const header = request.headers.get("authorization") ?? "";
-	const match = BEARER.exec(header);
-	if (!match) {
-		return unauthorized("Missing bearer token");
-	}
-
-	const claims = await verifyToken(match[1]);
-	if (!claims) {
-		return unauthorized("Invalid token");
-	}
-
-	const now = Math.floor(Date.now() / 1000);
-	if (claims.exp + CLOCK_SKEW_SECONDS < now) {
-		return unauthorized("Token expired");
-	}
-
-	return next();
-}
-
-function unauthorized(reason: string): Response {
-	return new Response(reason, {
-		status: 401,
-		headers: { "WWW-Authenticate": 'Bearer error="invalid_token"' },
-	});
-}
-\`\`\`
-
-| Check | Before | After |
-| --- | :---: | :---: |
-| Rejects missing header | Yes | Yes |
-| Accepts \`bearer\` (lowercase) | No | Yes |
-| Rejects expired tokens | **No** | Yes |
-| Sends \`WWW-Authenticate\` | No | Yes |
-`;
-
-export const SEED_TRANSCRIPTS: Record<string, ModelMessage[]> = {
-	[PIPELINE_SESSION_ID]: [
-		{
-			id: "m-pipeline-1",
-			role: "user",
-			content:
-				"Can you give me a breakdown of the Q4 pipeline? I want every open deal, weighted by probability, and anything I should worry about.",
-		},
-		{
-			id: "m-pipeline-2",
-			role: "assistant",
-			thinking: [
-				{
-					content:
-						"Pull open opportunities with a Q4 close date, weight by probability, group by stage, then look for concentration and stale deals.",
-				},
-			],
-			content: PIPELINE_ANSWER,
-		},
-		{
-			id: "m-pipeline-3",
-			role: "user",
-			content:
-				"Nice. How did you get those numbers? I'd like to rerun it myself.",
-		},
-		{ id: "m-pipeline-4", role: "assistant", content: QUERY_ANSWER },
-	],
-	[AUTH_SESSION_ID]: [
-		{
-			id: "m-auth-1",
-			role: "user",
-			content: "Please review the auth middleware before I merge the PR.",
-		},
-		{ id: "m-auth-2", role: "assistant", content: REVIEW_ANSWER },
-	],
-};
+export const PIPELINE_TRANSCRIPT: ModelMessage[] = [
+	{
+		id: "m-pipeline-1",
+		role: "user",
+		content:
+			"Can you give me a breakdown of the Q4 pipeline? I want every open deal, weighted by probability, and anything I should worry about.",
+	},
+	{
+		id: "m-pipeline-2",
+		role: "assistant",
+		thinking: [
+			{
+				content:
+					"Pull open opportunities with a Q4 close date, weight by probability, group by stage, then look for concentration and stale deals.",
+			},
+		],
+		content: PIPELINE_ANSWER,
+	},
+	{
+		id: "m-pipeline-3",
+		role: "user",
+		content:
+			"Nice. How did you get those numbers? I'd like to rerun it myself.",
+	},
+	{ id: "m-pipeline-4", role: "assistant", content: QUERY_ANSWER },
+];
