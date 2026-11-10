@@ -43,6 +43,7 @@ import {
 	parseTable,
 	type TableRow,
 } from "./parse";
+import { PlainTable, TableBoundary } from "./table-boundary";
 import { type AggregationChoices, Totals } from "./totals";
 
 /** Rows per page, inline. Shorter tables show no pagination at all. */
@@ -58,6 +59,16 @@ const SEARCH_FROM_ROWS = 6;
 const FILTER_FROM_ROWS = 2;
 
 /**
+ * Dev only: a column with this header makes the table throw, so the fallback
+ * (`table-boundary.tsx`) can be seen. The seed data has one.
+ */
+const CRASH_DEMO_HEADER = "[simulate error]";
+
+function isCrashDemo(column: ParsedTable["columns"][number]): boolean {
+	return column.header.text === CRASH_DEMO_HEADER;
+}
+
+/**
  * A GFM table, made interactive: sort by any column, search, filter by
  * column, page through long ones, copy as Markdown or CSV, download as CSV,
  * and open it larger.
@@ -66,18 +77,24 @@ const FILTER_FROM_ROWS = 2;
  * keep their links and formatting.
  */
 export function DataTable({ children }: { children?: ReactNode }) {
-	const parsed = useMemo(() => parseTable(children), [children]);
-	return parsed ? (
-		<InteractiveTable parsed={parsed} />
-	) : (
-		// Not the shape we expect (it should always be): the plain table.
-		<div className="overflow-x-auto">
-			<table>{children}</table>
-		</div>
+	return (
+		<TableBoundary plain={children}>
+			<ParsedDataTable>{children}</ParsedDataTable>
+		</TableBoundary>
 	);
 }
 
+function ParsedDataTable({ children }: { children?: ReactNode }) {
+	const parsed = useMemo(() => parseTable(children), [children]);
+	// Not the shape we expect (it should always be): the plain table.
+	if (!parsed) return <PlainTable>{children}</PlainTable>;
+	return <InteractiveTable parsed={parsed} />;
+}
+
 function InteractiveTable({ parsed }: { parsed: ParsedTable }) {
+	if (import.meta.env.DEV && parsed.columns.some(isCrashDemo)) {
+		throw new Error("Simulated table error (demo column in the seed data)");
+	}
 	const [expanded, setExpanded] = useState(false);
 	const [aggregations, setAggregations] = useState<AggregationChoices>({});
 	const totals = {

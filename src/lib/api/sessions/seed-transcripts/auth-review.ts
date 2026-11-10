@@ -71,6 +71,13 @@ function unauthorized(reason: string): Response {
 | Accepts \`bearer\` (lowercase) | No | Yes |
 | Rejects expired tokens | **No** | Yes |
 | Sends \`WWW-Authenticate\` | No | Yes |
+
+One more table, to show what happens if the interactive table ever fails to render. In dev, a column headed \`[simulate error]\` makes it throw, and the plain table appears instead:
+
+| Case | [simulate error] |
+| --- | ---: |
+| Interactive table | 1 |
+| Plain fallback | 2 |
 `;
 
 export const AUTH_TRANSCRIPT: ModelMessage[] = [
