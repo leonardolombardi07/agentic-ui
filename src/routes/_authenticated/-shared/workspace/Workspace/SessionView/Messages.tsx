@@ -4,7 +4,7 @@ import { ChevronRightIcon, WrenchIcon } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
 import type { SessionFile } from "@/lib/api/types/file";
 import { fileIcon, formatBytes } from "@/lib/file-preview";
-import { Markdown } from "@/lib/markdown";
+import { CopyButton, Markdown } from "@/lib/markdown";
 import { messageFiles, userVisibleText } from "./attachments";
 
 /** How close to the bottom still counts as "following" the reply, in px. */
@@ -126,7 +126,7 @@ function Message({
 
 	return (
 		<div
-			className="flex flex-col gap-3 text-sm leading-relaxed"
+			className="group/message flex flex-col gap-3 text-sm leading-relaxed"
 			data-testid="message-assistant"
 		>
 			{message.parts.map((part, index) => {
@@ -167,6 +167,16 @@ function Message({
 				>
 					Working...
 				</p>
+			) : null}
+			{hasText && !isStreaming ? (
+				// Under the answer, quiet until hovered: it's there when wanted.
+				<div className="-mt-1 flex opacity-60 transition-opacity group-hover/message:opacity-100 focus-within:opacity-100">
+					<CopyButton
+						label="Copy message"
+						text={() => markdownOf(message)}
+						data-testid="message-copy"
+					/>
+				</div>
 			) : null}
 		</div>
 	);
@@ -227,4 +237,11 @@ function Thinking({
 			</p>
 		</details>
 	);
+}
+
+/** The answer as the model wrote it, markdown and all. */
+function markdownOf(message: UIMessage): string {
+	return message.parts
+		.flatMap((part) => (part.type === "text" ? [part.content] : []))
+		.join("\n\n");
 }

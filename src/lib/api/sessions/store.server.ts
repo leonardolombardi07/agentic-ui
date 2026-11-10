@@ -6,6 +6,7 @@ import {
 	SessionSettingsSchema,
 	TitleSourceSchema,
 } from "@/lib/api/types/session";
+import { PIPELINE_SESSION_ID } from "./seed-transcripts.server";
 
 /*
  * Our own tables, next to TanStack AI's stores (`persistence.server.ts`). In memory
@@ -106,7 +107,7 @@ export const runMetasTable = {
 	},
 };
 
-/** A few sessions so the UI isn't empty in dev. They have no messages yet. */
+/** A few sessions so the UI isn't empty in dev. Some have history (`seed-transcripts.server.ts`). */
 function seedSessions(): SessionRecord[] {
 	const base = {
 		ownerId: "u-leonardo",
@@ -122,6 +123,12 @@ function seedSessions(): SessionRecord[] {
 	const rows: Array<
 		Pick<SessionRecord, "id" | "title" | "leadAgentId" | "updatedAt">
 	> = [
+		{
+			id: PIPELINE_SESSION_ID,
+			title: "Q4 pipeline review",
+			leadAgentId: "research",
+			updatedAt: "2026-10-31T09:15:00.000Z",
+		},
 		{
 			id: "s-q3-earnings",
 			title: "Q3 earnings summary",
