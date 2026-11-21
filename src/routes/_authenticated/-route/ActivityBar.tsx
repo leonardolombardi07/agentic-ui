@@ -10,6 +10,7 @@ import { cn } from "cn";
 import {
 	BotIcon,
 	HouseIcon,
+	LibraryBigIcon,
 	type LucideIcon,
 	MessagesSquareIcon,
 	PuzzleIcon,
@@ -72,6 +73,12 @@ export function ActivityBar() {
 			<ViewItem view="sessions" label="Sessions" icon={MessagesSquareIcon} />
 			<ViewItem view="agents" label="Agents" icon={BotIcon} />
 			<CustomizeItem />
+			<LinkItem
+				to="/knowledge-base"
+				label="Knowledge Base"
+				icon={LibraryBigIcon}
+				testId="activity-knowledge-base"
+			/>
 			<div className="my-1 h-px w-8 bg-sidebar-border" />
 			<LinkItem
 				to="/admin"

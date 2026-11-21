@@ -15,6 +15,8 @@ import { Route as AuthenticatedhomeIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAgentsIndexRouteImport } from './routes/_authenticated/agents/index'
 import { Route as AuthenticatedConnectorsIndexRouteImport } from './routes/_authenticated/connectors/index'
+import { Route as AuthenticatedKnowledgeBaseIndexRouteImport } from './routes/_authenticated/knowledge-base/index'
+import { Route as AuthenticatedKnowledgeBaseHowToUseRouteImport } from './routes/_authenticated/knowledge-base/how-to-use'
 import { Route as AuthenticatedPromptsIndexRouteImport } from './routes/_authenticated/prompts/index'
 import { Route as AuthenticatedSessionsIndexRouteImport } from './routes/_authenticated/sessions/index'
 import { Route as AuthenticatedSessionsAllRouteImport } from './routes/_authenticated/sessions/all'
@@ -60,6 +62,18 @@ const AuthenticatedConnectorsIndexRoute =
   AuthenticatedConnectorsIndexRouteImport.update({
     id: '/connectors/',
     path: '/connectors/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedKnowledgeBaseIndexRoute =
+  AuthenticatedKnowledgeBaseIndexRouteImport.update({
+    id: '/knowledge-base/',
+    path: '/knowledge-base/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedKnowledgeBaseHowToUseRoute =
+  AuthenticatedKnowledgeBaseHowToUseRouteImport.update({
+    id: '/knowledge-base/how-to-use',
+    path: '/knowledge-base/how-to-use',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPromptsIndexRoute =
@@ -148,11 +162,13 @@ const ApiSessionsSessionIdFilesIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedhomeIndexRoute
   '/sessions': typeof AuthenticatedSessionsRouteRouteWithChildren
+  '/knowledge-base/how-to-use': typeof AuthenticatedKnowledgeBaseHowToUseRoute
   '/sessions/all': typeof AuthenticatedSessionsAllRoute
   '/sessions/new': typeof AuthenticatedSessionsNewRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/agents/': typeof AuthenticatedAgentsIndexRoute
   '/connectors/': typeof AuthenticatedConnectorsIndexRoute
+  '/knowledge-base/': typeof AuthenticatedKnowledgeBaseIndexRoute
   '/prompts/': typeof AuthenticatedPromptsIndexRoute
   '/sessions/': typeof AuthenticatedSessionsIndexRoute
   '/skills/': typeof AuthenticatedSkillsIndexRoute
@@ -167,12 +183,14 @@ export interface FileRoutesByFullPath {
   '/api/sessions/$sessionId/files/': typeof ApiSessionsSessionIdFilesIndexRoute
 }
 export interface FileRoutesByTo {
+  '/knowledge-base/how-to-use': typeof AuthenticatedKnowledgeBaseHowToUseRoute
   '/sessions/all': typeof AuthenticatedSessionsAllRoute
   '/sessions/new': typeof AuthenticatedSessionsNewRoute
   '/': typeof AuthenticatedhomeIndexRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/agents': typeof AuthenticatedAgentsIndexRoute
   '/connectors': typeof AuthenticatedConnectorsIndexRoute
+  '/knowledge-base': typeof AuthenticatedKnowledgeBaseIndexRoute
   '/prompts': typeof AuthenticatedPromptsIndexRoute
   '/sessions': typeof AuthenticatedSessionsIndexRoute
   '/skills': typeof AuthenticatedSkillsIndexRoute
@@ -190,12 +208,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_authenticated/sessions': typeof AuthenticatedSessionsRouteRouteWithChildren
+  '/_authenticated/knowledge-base/how-to-use': typeof AuthenticatedKnowledgeBaseHowToUseRoute
   '/_authenticated/sessions/all': typeof AuthenticatedSessionsAllRoute
   '/_authenticated/sessions/new': typeof AuthenticatedSessionsNewRoute
   '/_authenticated/(home)/': typeof AuthenticatedhomeIndexRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/agents/': typeof AuthenticatedAgentsIndexRoute
   '/_authenticated/connectors/': typeof AuthenticatedConnectorsIndexRoute
+  '/_authenticated/knowledge-base/': typeof AuthenticatedKnowledgeBaseIndexRoute
   '/_authenticated/prompts/': typeof AuthenticatedPromptsIndexRoute
   '/_authenticated/sessions/': typeof AuthenticatedSessionsIndexRoute
   '/_authenticated/skills/': typeof AuthenticatedSkillsIndexRoute
@@ -214,11 +234,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/sessions'
+    | '/knowledge-base/how-to-use'
     | '/sessions/all'
     | '/sessions/new'
     | '/admin/'
     | '/agents/'
     | '/connectors/'
+    | '/knowledge-base/'
     | '/prompts/'
     | '/sessions/'
     | '/skills/'
@@ -233,12 +255,14 @@ export interface FileRouteTypes {
     | '/api/sessions/$sessionId/files/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/knowledge-base/how-to-use'
     | '/sessions/all'
     | '/sessions/new'
     | '/'
     | '/admin'
     | '/agents'
     | '/connectors'
+    | '/knowledge-base'
     | '/prompts'
     | '/sessions'
     | '/skills'
@@ -255,12 +279,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/_authenticated/sessions'
+    | '/_authenticated/knowledge-base/how-to-use'
     | '/_authenticated/sessions/all'
     | '/_authenticated/sessions/new'
     | '/_authenticated/(home)/'
     | '/_authenticated/admin/'
     | '/_authenticated/agents/'
     | '/_authenticated/connectors/'
+    | '/_authenticated/knowledge-base/'
     | '/_authenticated/prompts/'
     | '/_authenticated/sessions/'
     | '/_authenticated/skills/'
@@ -324,6 +350,20 @@ declare module '@tanstack/react-router' {
       path: '/connectors'
       fullPath: '/connectors/'
       preLoaderRoute: typeof AuthenticatedConnectorsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/knowledge-base/': {
+      id: '/_authenticated/knowledge-base/'
+      path: '/knowledge-base'
+      fullPath: '/knowledge-base/'
+      preLoaderRoute: typeof AuthenticatedKnowledgeBaseIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/knowledge-base/how-to-use': {
+      id: '/_authenticated/knowledge-base/how-to-use'
+      path: '/knowledge-base/how-to-use'
+      fullPath: '/knowledge-base/how-to-use'
+      preLoaderRoute: typeof AuthenticatedKnowledgeBaseHowToUseRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/prompts/': {
@@ -450,10 +490,12 @@ const AuthenticatedSessionsRouteRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSessionsRouteRoute: typeof AuthenticatedSessionsRouteRouteWithChildren
+  AuthenticatedKnowledgeBaseHowToUseRoute: typeof AuthenticatedKnowledgeBaseHowToUseRoute
   AuthenticatedhomeIndexRoute: typeof AuthenticatedhomeIndexRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAgentsIndexRoute: typeof AuthenticatedAgentsIndexRoute
   AuthenticatedConnectorsIndexRoute: typeof AuthenticatedConnectorsIndexRoute
+  AuthenticatedKnowledgeBaseIndexRoute: typeof AuthenticatedKnowledgeBaseIndexRoute
   AuthenticatedPromptsIndexRoute: typeof AuthenticatedPromptsIndexRoute
   AuthenticatedSkillsIndexRoute: typeof AuthenticatedSkillsIndexRoute
   AuthenticatedAgentsAgentIdIndexRoute: typeof AuthenticatedAgentsAgentIdIndexRoute
@@ -465,10 +507,13 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSessionsRouteRoute: AuthenticatedSessionsRouteRouteWithChildren,
+  AuthenticatedKnowledgeBaseHowToUseRoute:
+    AuthenticatedKnowledgeBaseHowToUseRoute,
   AuthenticatedhomeIndexRoute: AuthenticatedhomeIndexRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAgentsIndexRoute: AuthenticatedAgentsIndexRoute,
   AuthenticatedConnectorsIndexRoute: AuthenticatedConnectorsIndexRoute,
+  AuthenticatedKnowledgeBaseIndexRoute: AuthenticatedKnowledgeBaseIndexRoute,
   AuthenticatedPromptsIndexRoute: AuthenticatedPromptsIndexRoute,
   AuthenticatedSkillsIndexRoute: AuthenticatedSkillsIndexRoute,
   AuthenticatedAgentsAgentIdIndexRoute: AuthenticatedAgentsAgentIdIndexRoute,
